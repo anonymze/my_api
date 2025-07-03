@@ -28,7 +28,7 @@ export const withAuth =
   };
 
 export const getUser = (emailUser: string) => {
-  return queriesDB.getUserByEmail.get(emailUser) as User;
+  return queriesDB.getUserByEmail.get(emailUser) as User | undefined;
 };
 
 export const hashPassword = async (password: string) => {

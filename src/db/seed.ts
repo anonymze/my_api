@@ -8,7 +8,7 @@ export const db = new Database("src/db/db.sqlite", {
 // Initialize tables
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id TEXT PRIMARY KEY DEFAULT (hex(randomblob(16))),
     lastname TEXT NOT NULL,
     firstname TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
