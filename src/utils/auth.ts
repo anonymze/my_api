@@ -1,10 +1,11 @@
 import { Effect, Either } from "effect";
 import { queriesDB } from "../db/database";
+import type { User } from "../types/user";
 import { verifyJWT } from "./jwt";
 
 export const withAuth =
-  (handler: (req: Request, user: unknown) => Promise<Response>) =>
-  async (req: Request): Promise<Response> => {
+  (handler: (req: Request, user: User) => Promise<Response>) =>
+  async (req: Request & { user: unknown }): Promise<Response> => {
     const tokenEffect = await Effect.runPromise(
       Effect.either(verifyJWT(req.headers)),
     );
@@ -17,9 +18,11 @@ export const withAuth =
       return Response.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    return handler(req, getUser(tokenEffect.right.email));
+    const user = getUser(tokenEffect.right.email);
+
+    return handler(req, user);
   };
 
 export const getUser = (emailUser: string) => {
-  return queriesDB.getUserByEmail.get(emailUser);
+  return queriesDB.getUserByEmail.get(emailUser) as User;
 };
