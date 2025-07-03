@@ -26,7 +26,9 @@ const loginRoute = async (req: Request): Promise<Response> => {
     return Response.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
-  return jsonResponseLogged(user, user);
+  const { hash, ...restUser } = user;
+
+  return jsonResponseLogged(restUser, user);
 };
 
 const protectedRoute = withAuth(async (_, user) => {
