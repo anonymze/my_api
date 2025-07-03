@@ -1,17 +1,22 @@
 {
   "scripts": {
-    "start": "bun --watch run src/index.ts",
-    "dev": "bun run start",
-    "db:seed": "bun run src/db/seed.ts"
+    "dev": "bun --hot src/index.ts",
+    "build": "bun build ./src/front/index.html --outdir=dist --sourcemap --target=browser --minify --define:process.env.NODE_ENV='\"production\"' --env='BUN_PUBLIC_*'",
+    "start": "NODE_ENV=production bun run src/index.ts",
+    "db:seed": "bun run src/server/db/seed.ts"
   },
   "dependencies": {
     "effect": "^3.16.11",
     "jsonwebtoken": "^9.0.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "zod": "^3.25.69"
   },
   "devDependencies": {
     "@types/bun": "^1.2.17",
-    "@types/jsonwebtoken": "^9.0.10"
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6"
   },
   "name": "my_api",
   "module": "index.ts",

@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 
 // Create or connect to database (start path at root)
-export const db = new Database("src/db/db.sqlite", {
+export const db = new Database("src/server/db/db.sqlite", {
   strict: true,
 });
 

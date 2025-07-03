@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 
-export const db = new Database("src/db/db.sqlite", {
+export const db = new Database("src/server/db/db.sqlite", {
   create: true,
   strict: true,
 });
