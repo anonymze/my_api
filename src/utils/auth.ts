@@ -5,7 +5,7 @@ import { verifyJWT } from "./jwt";
 
 export const withAuth =
   (handler: (req: Request, user: User) => Promise<Response>) =>
-  async (req: Request & { user: unknown }): Promise<Response> => {
+  async (req: Request): Promise<Response> => {
     const tokenEffect = await Effect.runPromise(
       Effect.either(verifyJWT(req.headers)),
     );
