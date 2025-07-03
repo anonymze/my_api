@@ -14,5 +14,3 @@ export const jsonResponseLogged = (body: any, dataJWT: User) => {
     headers: loggedHeaders(dataJWT),
   });
 };
-
-export const headers = new Headers();
