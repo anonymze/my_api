@@ -20,9 +20,21 @@ export const withAuth =
 
     const user = getUser(tokenEffect.right.email);
 
+    if (!user) {
+      return Response.json({ error: "User not found" }, { status: 404 });
+    }
+
     return handler(req, user);
   };
 
 export const getUser = (emailUser: string) => {
   return queriesDB.getUserByEmail.get(emailUser) as User;
+};
+
+export const hashPassword = async (password: string) => {
+  return Bun.password.hash(password);
+};
+
+export const verifyPassword = async (password: string, hash: string) => {
+  return Bun.password.verify(password, hash);
 };

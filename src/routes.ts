@@ -31,7 +31,6 @@ const loginRoute = async (req: Request): Promise<Response> => {
 };
 
 const protectedRoute = withAuth(async (_, user) => {
-  console.log(user);
   return Response.json(user);
 });
 

@@ -1,4 +1,9 @@
-import { db, queriesDB } from "./database";
+import { Database } from "bun:sqlite";
+
+export const db = new Database("src/db/db.sqlite", {
+  create: true,
+  strict: true,
+});
 
 // Initialize tables
 db.exec(`
@@ -7,18 +12,26 @@ db.exec(`
     lastname TEXT NOT NULL,
     firstname TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
+    hash TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `);
 
 // Initialize default user if none exists
-const initializeDefaultUser = () => {
-  const existingUser = queriesDB.getUserByEmail.get("test@test.fr");
+const initializeDefaultUser = async () => {
+  const existingUser = db
+    .prepare("SELECT * FROM users WHERE email = ?")
+    .get("test@test.fr");
   if (!existingUser) {
-    queriesDB.insertUser.run("Admin", "User", "test@test.fr", "azerty123456");
-    console.log("Default user created: admin@example.com");
+    const hashedPassword = await Bun.password.hash(
+      process.env.USER_SEED_PASSWORD!,
+    );
+
+    db.prepare(
+      "INSERT INTO users (lastname, firstname, email, hash) VALUES (?, ?, ?, ?) RETURNING *",
+    ).run("Admin", "User", "test@test.fr", hashedPassword);
+    console.log("Default user created: test@test.fr");
   }
 };
 
