@@ -58,7 +58,7 @@ export default function LoginPage() {
             <img src={logo} alt="Logo" className="w-16 h-16 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Gestionnaire de Commissions pour le Groupe Valorem
+            Gestionnaire de commissions pour le Groupe Valorem
           </h1>
           <p className="text-gray-600">Connectez-vous à votre compte</p>
         </div>

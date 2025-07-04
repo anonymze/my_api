@@ -14,22 +14,22 @@ export const api = axios.create({
     "Content-Type": "application/json",
     // "X-Origin": ORIGIN_WEB,
   },
-  withCredentials: true,
+  // withCredentials: true,
 });
 
 // Add response interceptor to handle authentication errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Only reload if user was logged in (had a token)
-      const hadToken = localStorage.getItem("commission-jwt-token");
-      localStorage.removeItem("commission-jwt-token");
-      if (hadToken) {
-        alert("Votre session a expiré. Veuillez vous reconnecter.");
-        window.location.reload();
-      }
-    }
-    return Promise.reject(error);
-  },
-);
+// api.interceptors.response.use(
+//   (response) => response,
+//   (error) => {
+//     if (error.response?.status === 401) {
+//       // Only reload if user was logged in (had a token)
+//       const hadToken = localStorage.getItem("commission-jwt-token");
+//       localStorage.removeItem("commission-jwt-token");
+//       if (hadToken) {
+//         alert("Votre session a expiré. Veuillez vous reconnecter.");
+//         window.location.reload();
+//       }
+//     }
+//     return Promise.reject(error);
+//   },
+// );

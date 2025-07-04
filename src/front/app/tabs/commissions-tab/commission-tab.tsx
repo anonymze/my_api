@@ -1,13 +1,4 @@
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/front/components/ui/select";
-import { Alert, AlertDescription } from "@/front/components/ui/alert";
-import { Badge } from "@/front/components/ui/badge";
-import { Button } from "@/front/components/ui/button";
+import { getCommissionsQuery } from "@/front/api/queries/commission-queries";
 import {
   Card,
   CardContent,
@@ -17,93 +8,54 @@ import {
 } from "@/front/components/ui/card";
 import { Input } from "@/front/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/front/components/ui/select";
+import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/front/components/ui/table";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   Calculator,
-  DollarSign,
+  DollarSignIcon,
   Filter,
   Loader2,
   Search,
-  TrendingUp,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-
-interface Commission {
-  id: number;
-  employee: string;
-  code: string;
-  sales: number;
-  rate: number;
-  commission: number;
-  period: string;
-  status: string;
-}
+import { useState } from "react";
 
 export default function CommissionsTab() {
-  const [commissions, setCommissions] = useState<Commission[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [periodFilter, setPeriodFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
 
-  useEffect(() => {
-    const loadCommissions = async () => {
-      setLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-
-      // Mock large dataset
-      const mockData: Commission[] = Array.from({ length: 200 }, (_, i) => ({
-        id: i + 1,
-        employee: `Employee ${i + 1}`,
-        code: `EMP${String(i + 1).padStart(3, "0")}`,
-        sales: Math.floor(Math.random() * 50000) + 10000,
-        rate: Math.floor(Math.random() * 8) + 3,
-        commission: 0,
-        period: `2024-${String(Math.floor(Math.random() * 12) + 1).padStart(2, "0")}`,
-        status: Math.random() > 0.8 ? "pending" : "calculated",
-      }));
-
-      // Calculate commissions
-      mockData.forEach((item) => {
-        item.commission = Math.floor(item.sales * (item.rate / 100));
-      });
-
-      setCommissions(mockData);
-      setLoading(false);
-    };
-
-    loadCommissions();
-  }, []);
-
-  const filteredCommissions = commissions.filter((commission) => {
-    const matchesSearch =
-      commission.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      commission.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPeriod =
-      periodFilter === "all" || commission.period === periodFilter;
-    return matchesSearch && matchesPeriod;
+  const {
+    isPending,
+    isError,
+    error,
+    data,
+    isLoading,
+    isFetching,
+    isPlaceholderData,
+  } = useQuery({
+    queryKey: [
+      "commissions",
+      {
+        page: currentPage,
+      },
+    ],
+    queryFn: getCommissionsQuery,
+    placeholderData: keepPreviousData,
   });
 
-  const paginatedCommissions = filteredCommissions.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
-
-  const totalPages = Math.ceil(filteredCommissions.length / itemsPerPage);
-  const totalCommissions = filteredCommissions.reduce(
-    (sum, c) => sum + c.commission,
-    0,
-  );
-  const totalSales = filteredCommissions.reduce((sum, c) => sum + c.sales, 0);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <Card>
         <CardContent className="p-6 flex items-center justify-center">
@@ -114,44 +66,41 @@ export default function CommissionsTab() {
     );
   }
 
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-6 flex items-center justify-center">
+          <p className="text-red-600">
+            Erreur lors du chargement des commissions
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Calculator className="w-5 h-5" />
-          Calcul et Gestion des Commissions
+          Gestion et calcul des Commissions
         </CardTitle>
         <CardDescription>
-          Consultez et gérez les commissions calculées pour tous les employés
+          Consultez, gérez et créez les commissions pour tous les employés.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-green-600" />
+                <DollarSignIcon className="w-4 h-4 text-green-600" />
                 <div>
-                  <p className="text-2xl font-bold">
-                    ${totalCommissions.toLocaleString()}
-                  </p>
+                  <p className="text-2xl font-bold">€{0}</p>
                   <p className="text-sm text-muted-foreground">
-                    Total Commissions
+                    Total commissions
                   </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-blue-600" />
-                <div>
-                  <p className="text-2xl font-bold">
-                    ${totalSales.toLocaleString()}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Total Ventes</p>
                 </div>
               </div>
             </CardContent>
@@ -161,24 +110,25 @@ export default function CommissionsTab() {
               <div className="flex items-center gap-2">
                 <Calculator className="w-4 h-4 text-purple-600" />
                 <div>
-                  <p className="text-2xl font-bold">
-                    {filteredCommissions.length}
+                  <p className="text-2xl font-bold">{data?.total || 0}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Total Enregistrements
                   </p>
-                  <p className="text-sm text-muted-foreground">Total Enregistrements</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <Alert>
+        {/* <Alert className="items-center">
           <Calculator className="h-4 w-4" />
           <AlertDescription>
-            Les calculs de commissions sont basés sur les données importées et les
-            mappings configurés. Assurez-vous que tous les fichiers sont traités et que les mappings sont corrects
-            avant de calculer.
+            Les calculs de commissions sont basés sur les données importées et
+            les mappings configurés. Assurez-vous que tous les fichiers sont
+            traités et que les mappings sont corrects avant créer une
+            commission.
           </AlertDescription>
-        </Alert>
+        </Alert> */}
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -204,10 +154,6 @@ export default function CommissionsTab() {
                 <SelectItem value="2024-03">Mars 2024</SelectItem>
               </SelectContent>
             </Select>
-            <Button>
-              <Calculator className="w-4 h-4 mr-2" />
-              Recalculer
-            </Button>
           </div>
         </div>
 
@@ -226,7 +172,7 @@ export default function CommissionsTab() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedCommissions.map((commission) => (
+              {/* {commissions.map((commission) => (
                 <TableRow key={commission.id}>
                   <TableCell className="font-medium">
                     {commission.employee}
@@ -256,18 +202,18 @@ export default function CommissionsTab() {
                     </Badge>
                   </TableCell>
                 </TableRow>
-              ))}
+              ))} */}
             </TableBody>
           </Table>
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {/* {totalPages > 1 && (
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               Affichage de {(currentPage - 1) * itemsPerPage + 1} à{" "}
-              {Math.min(currentPage * itemsPerPage, filteredCommissions.length)}{" "}
-              sur {filteredCommissions.length} commissions
+              {Math.min(currentPage * itemsPerPage, data?.total || 0)} sur{" "}
+              {data?.total || 0} commissions
             </p>
             <div className="flex gap-2">
               <Button
@@ -293,7 +239,7 @@ export default function CommissionsTab() {
               </Button>
             </div>
           </div>
-        )}
+        )} */}
       </CardContent>
     </Card>
   );

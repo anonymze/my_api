@@ -1,7 +1,5 @@
 import type React from "react";
 
-import { useState, useEffect } from "react";
-import { Upload, FileSpreadsheet, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/front/components/ui/button";
 import {
   Card,
@@ -12,6 +10,8 @@ import {
 } from "@/front/components/ui/card";
 import { Input } from "@/front/components/ui/input";
 import { Progress } from "@/front/components/ui/progress";
+import { FileSpreadsheet, Loader2, Trash2, Upload } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function ImportTab() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -52,19 +52,23 @@ export default function ImportTab() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileSpreadsheet className="w-5 h-5" />
-          Importer les Fichiers Excel de Commissions
+          Importer les fichiers Excel de Commissions
         </CardTitle>
         <CardDescription>
-          Téléchargez les fichiers Excel contenant les données de commissions. Formats supportés :
-          .xlsx, .xls
+          Téléchargez les fichiers Excel contenant les données de commissions.
+          Formats supportés : .xlsx, .xls
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
           <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
           <div className="space-y-2">
-            <p className="text-lg font-medium">Déposez vos fichiers Excel ici</p>
-            <p className="text-sm text-muted-foreground">ou cliquez pour parcourir</p>
+            <p className="text-lg font-medium">
+              Déposez vos fichiers Excel ici
+            </p>
+            <p className="text-sm text-muted-foreground">
+              ou cliquez pour parcourir
+            </p>
           </div>
           <Input
             type="file"

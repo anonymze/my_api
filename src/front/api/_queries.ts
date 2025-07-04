@@ -17,7 +17,6 @@ export const queryClient = new QueryClient({
       // refetchOnWindowFocus: true,
       retry: 1,
       staleTime: 60 * 60 * 1000, // 60 minutes
-      // staleTime: 10,
     },
   },
 });

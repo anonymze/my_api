@@ -1,5 +1,5 @@
 import type { AppUser } from "@/front/types/user";
-import { createContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useState, type ReactNode } from "react";
 
 interface AuthContextType {
   token: string | null;
@@ -12,19 +12,10 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType>(null!);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Check for stored JWT token on mount
-    const storedToken = localStorage.getItem("commission-jwt-token");
-    if (storedToken) {
-      setToken(storedToken);
-    }
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 400);
-  }, []);
+  const [token, setToken] = useState<string | null>(
+    localStorage.getItem("commission-jwt-token"),
+  );
+  const [isLoading, setIsLoading] = useState(false);
 
   const login = (appUser: AppUser) => {
     setToken(appUser.token);
