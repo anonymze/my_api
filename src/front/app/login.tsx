@@ -11,7 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/front/components/ui/card";
-import { Checkbox } from "@/front/components/ui/checkbox";
 import { Input } from "@/front/components/ui/input";
 import { Label } from "@/front/components/ui/label";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
@@ -79,9 +78,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         {/* Logo/Header */}
         <div className="text-center space-y-2">
           <div className="flex justify-center">
-            <div className="bg-blue-600 p-3 rounded-full">
-              <img src={logo} alt="Logo" className="w-8 h-8 text-white" />
-            </div>
+            <img src={logo} alt="Logo" className="w-16 h-16 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">
             Gestionnaire de Commissions pour le Groupe Valorem
@@ -92,10 +89,10 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         {/* Login Card */}
         <Card className="shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-xl text-center">Bon retour</CardTitle>
+            <CardTitle className="text-xl text-center">Bienvenue,</CardTitle>
             <CardDescription className="text-center">
               Entrez vos identifiants pour accéder au système de gestion des
-              commissions
+              commissions.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -152,7 +149,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
+              {/* <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="remember"
@@ -173,9 +170,13 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 >
                   Mot de passe oublié ?
                 </Button>
-              </div>
+              </div> */}
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button
+                type="submit"
+                className="w-full mt-3"
+                disabled={isLoading}
+              >
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
