@@ -1,5 +1,5 @@
-import indexHtml from "./index.html";
-import { loginRoute, protectedRoute } from "./routes";
+import indexHtml from "./front/index.html";
+import { loginRoute, protectedRoute } from "./server/routes";
 
 const server = Bun.serve({
   port: 3000,
