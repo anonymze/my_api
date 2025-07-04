@@ -12,7 +12,7 @@ export const api = axios.create({
   headers: {
     Accept: "application/json",
     "Content-Type": "application/json",
-    "X-Origin": ORIGIN_WEB,
+    // "X-Origin": ORIGIN_WEB,
   },
   withCredentials: true,
 });
