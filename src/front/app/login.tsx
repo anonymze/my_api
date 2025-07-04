@@ -1,6 +1,7 @@
 import type React from "react";
 
 import { useLoginMutation, type LoginCredentials } from "@/front/api/auth";
+import logo from "@/front/assets/images/logo.png";
 import { Alert, AlertDescription } from "@/front/components/ui/alert";
 import { Button } from "@/front/components/ui/button";
 import {
@@ -79,7 +80,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         <div className="text-center space-y-2">
           <div className="flex justify-center">
             <div className="bg-blue-600 p-3 rounded-full">
-              <img src="logo.png" alt="Logo" className="w-8 h-8 text-white" />
+              <img src={logo} alt="Logo" className="w-8 h-8 text-white" />
             </div>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">
