@@ -1,4 +1,7 @@
 import { getCommissionsQuery } from "@/front/api/queries/commission-queries";
+import { Alert, AlertDescription } from "@/front/components/ui/alert";
+import { Badge } from "@/front/components/ui/badge";
+import { Button } from "@/front/components/ui/button";
 import {
   Card,
   CardContent,
@@ -6,6 +9,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/front/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/front/components/ui/dropdown-menu";
 import { Input } from "@/front/components/ui/input";
 import {
   Select,
@@ -17,6 +27,7 @@ import {
 import {
   Table,
   TableBody,
+  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -24,17 +35,50 @@ import {
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   Calculator,
-  DollarSignIcon,
+  Download,
+  Edit,
+  Eye,
   Filter,
-  Loader2,
+  Mail,
+  MoreHorizontal,
   Search,
+  Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { TabSkeleton } from "../../home";
 
 export default function CommissionsTab() {
-  const [searchTerm, setSearchTerm] = useState("");
+  // Get initial search term from URL
+  const getInitialSearchTerm = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('search') || '';
+  };
+  
+  const [searchTerm, setSearchTerm] = useState(getInitialSearchTerm);
   const [periodFilter, setPeriodFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // Update URL when search term changes
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    const url = new URL(window.location.href);
+    if (value) {
+      url.searchParams.set('search', value);
+    } else {
+      url.searchParams.delete('search');
+    }
+    window.history.replaceState({}, '', url.toString());
+  };
+  
+  // Update search term if URL changes (e.g., back button)
+  useEffect(() => {
+    const handlePopState = () => {
+      setSearchTerm(getInitialSearchTerm());
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const {
     isPending,
@@ -49,21 +93,18 @@ export default function CommissionsTab() {
       "commissions",
       {
         page: currentPage,
+        depht: 2,
       },
     ],
     queryFn: getCommissionsQuery,
     placeholderData: keepPreviousData,
   });
 
+  console.log(data);
+  console.log(data?.docs[0]);
+
   if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="p-6 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin mr-2" />
-          Chargement des données de commission...
-        </CardContent>
-      </Card>
-    );
+    return <TabSkeleton />;
   }
 
   if (error) {
@@ -72,6 +113,18 @@ export default function CommissionsTab() {
         <CardContent className="p-6 flex items-center justify-center">
           <p className="text-red-600">
             Erreur lors du chargement des commissions
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!data || !data.docs) {
+    return (
+      <Card>
+        <CardContent className="p-6 flex items-center justify-center">
+          <p className="text-gray-600">
+            Il n'y a pas de commissions disponibles
           </p>
         </CardContent>
       </Card>
@@ -91,7 +144,7 @@ export default function CommissionsTab() {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
@@ -110,7 +163,7 @@ export default function CommissionsTab() {
               <div className="flex items-center gap-2">
                 <Calculator className="w-4 h-4 text-purple-600" />
                 <div>
-                  <p className="text-2xl font-bold">{data?.total || 0}</p>
+                  <p className="text-2xl font-bold">{data?.totalDocs || 0}</p>
                   <p className="text-sm text-muted-foreground">
                     Total Enregistrements
                   </p>
@@ -118,9 +171,9 @@ export default function CommissionsTab() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </div> */}
 
-        {/* <Alert className="items-center">
+        <Alert className="items-center">
           <Calculator className="h-4 w-4" />
           <AlertDescription>
             Les calculs de commissions sont basés sur les données importées et
@@ -128,7 +181,7 @@ export default function CommissionsTab() {
             traités et que les mappings sont corrects avant créer une
             commission.
           </AlertDescription>
-        </Alert> */}
+        </Alert>
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -137,7 +190,7 @@ export default function CommissionsTab() {
             <Input
               placeholder="Rechercher employés ou codes..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="max-w-sm"
             />
           </div>
@@ -162,84 +215,125 @@ export default function CommissionsTab() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Employé</TableHead>
-                <TableHead>Code</TableHead>
-                <TableHead>Période</TableHead>
-                <TableHead className="text-right">Ventes</TableHead>
-                <TableHead className="text-right">Taux (%)</TableHead>
-                <TableHead className="text-right">Commission</TableHead>
-                <TableHead>Statut</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Nom et prénom</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Production</TableHead>
+                <TableHead>Encours</TableHead>
+                <TableHead className="ml-auto text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {/* {commissions.map((commission) => (
+              {data.docs.map((commission) => (
                 <TableRow key={commission.id}>
                   <TableCell className="font-medium">
-                    {commission.employee}
+                    {commission.app_user.email}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">{commission.code}</Badge>
-                  </TableCell>
-                  <TableCell>{commission.period}</TableCell>
-                  <TableCell className="text-right">
-                    ${commission.sales.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {commission.rate}%
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    ${commission.commission.toLocaleString()}
+                    {commission.app_user.lastname}{" "}
+                    {commission.app_user.firstname}
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      className={
-                        commission.status === "calculated"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }
-                    >
-                      {commission.status}
-                    </Badge>
+                    <Badge variant="outline">{commission.app_user.role}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    {commission.informations?.production ? (
+                      <Badge variant="secondary">
+                        {commission.informations?.production}
+                      </Badge>
+                    ) : null}
+                  </TableCell>
+                  <TableCell>
+                    {commission.informations?.encours ? (
+                      <Badge variant="secondary">
+                        {commission.informations?.encours}
+                      </Badge>
+                    ) : null}
+                  </TableCell>
+
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Ouvrir le menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => console.log("View", commission.id)}
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          <span>Voir</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => console.log("Update", commission.id)}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          <span>Modifier</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => console.log("Delete", commission.id)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          <span>Supprimer</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => console.log("Export", commission.id)}
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          <span>Exporter</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            console.log("Send email", commission.id)
+                          }
+                        >
+                          <Mail className="mr-2 h-4 w-4" />
+                          <span>Envoyer email</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))} */}
+              ))}
             </TableBody>
           </Table>
         </div>
 
         {/* Pagination */}
-        {/* {totalPages > 1 && (
+        {data?.totalPages > 1 && (
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Affichage de {(currentPage - 1) * itemsPerPage + 1} à{" "}
-              {Math.min(currentPage * itemsPerPage, data?.total || 0)} sur{" "}
-              {data?.total || 0} commissions
+              Affichage de {(data.page - 1) * data.limit + 1} à{" "}
+              {Math.min(data.page * data.limit, data.totalDocs)} sur{" "}
+              {data.totalDocs} commissions
             </p>
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
+                disabled={!data.hasPrevPage || isFetching}
               >
                 Précédent
               </Button>
               <span className="flex items-center px-3 text-sm">
-                Page {currentPage} sur {totalPages}
+                Page {data.page} sur {data.totalPages}
               </span>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                }
-                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((prev) => prev + 1)}
+                disabled={!data.hasNextPage || isFetching}
               >
                 Suivant
               </Button>
             </div>
           </div>
-        )} */}
+        )}
       </CardContent>
     </Card>
   );

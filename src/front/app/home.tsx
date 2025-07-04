@@ -8,7 +8,7 @@ import {
   TabsTrigger,
 } from "@/front/components/ui/tabs";
 import { Building2, Calculator, LogOutIcon, Upload, Users } from "lucide-react";
-import React, { Suspense } from "react";
+import React, { Suspense, useEffect } from "react";
 
 import "@/front/styles/global.css";
 
@@ -24,16 +24,30 @@ const CommissionsTab = lazy(
 );
 
 // Loading skeleton component
-function TabSkeleton() {
+export function TabSkeleton() {
   return (
     <Card>
-      <CardContent className="p-6 space-y-4">
+      <CardContent className="space-y-4">
         <Skeleton className="h-8 w-1/3" />
-        <Skeleton className="h-4 w-2/3" />
-        <div className="space-y-2">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-5 w-2/3" />
+        <div className="space-y-2 pt-2">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
         </div>
       </CardContent>
     </Card>
@@ -42,7 +56,32 @@ function TabSkeleton() {
 
 export default function CommissionPage() {
   const { logout } = React.use(AuthContext);
-  const [activeTab, setActiveTab] = React.useState("commissions");
+
+  // Get initial tab from URL or default to "commissions"
+  const getInitialTab = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get("tab") || "commissions";
+  };
+
+  const [activeTab, setActiveTab] = React.useState(getInitialTab);
+
+  // Update URL when tab changes
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", value);
+    window.history.replaceState({}, "", url.toString());
+  };
+
+  // Update tab if URL changes (e.g., back button)
+  useEffect(() => {
+    const handlePopState = () => {
+      setActiveTab(getInitialTab());
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   return (
     <div className="">
@@ -64,7 +103,7 @@ export default function CommissionPage() {
 
         <Tabs
           value={activeTab}
-          onValueChange={setActiveTab}
+          onValueChange={handleTabChange}
           className="space-y-6"
         >
           <TabsList className="grid w-full grid-cols-4">

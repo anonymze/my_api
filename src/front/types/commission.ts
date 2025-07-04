@@ -4,7 +4,7 @@ import type { AppUser } from "./user";
 
 export interface Commission {
   id: string;
-  app_user: AppUser;
+  app_user: AppUser["user"];
   pdf?: Media | null;
   suppliers: Supplier[];
   structured_product?: boolean | null;
@@ -16,6 +16,27 @@ export interface Commission {
     up_front?: number | null;
     broqueur?: string | null;
   };
+  updatedAt: string;
+  createdAt: string;
+}
+
+export interface AppUsersCommissionsCode {
+  id: string;
+  app_user: AppUser;
+  code: {
+    code: string;
+    id?: string | null;
+  }[];
+  updatedAt: string;
+  createdAt: string;
+}
+
+export interface SuppliersCommissionsColumn {
+  id: string;
+  supplier: Supplier;
+  code_column_letter: string;
+  type_column_letter: string;
+  amount_column_letter: string;
   updatedAt: string;
   createdAt: string;
 }
