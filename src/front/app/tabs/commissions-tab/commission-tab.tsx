@@ -44,40 +44,58 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { TabSkeleton } from "../../home";
+
+// Shared search input component outside the main component
+const SearchInput = ({
+  searchTerm,
+  onSearchChange,
+}: {
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+}) => (
+  <div className="flex items-center gap-2 flex-1">
+    <Search className="w-4 h-4 text-muted-foreground" />
+    <Input
+      placeholder="Rechercher employés ou codes..."
+      onChange={(e) => onSearchChange(e.target.value)}
+      className="max-w-sm"
+    />
+  </div>
+);
 
 export default function CommissionsTab() {
   // Get initial search term from URL
   const getInitialSearchTerm = () => {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('search') || '';
+    return urlParams.get("search") || "";
   };
-  
+
   const [searchTerm, setSearchTerm] = useState(getInitialSearchTerm);
   const [periodFilter, setPeriodFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  
+
   // Update URL when search term changes
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
     const url = new URL(window.location.href);
     if (value) {
-      url.searchParams.set('search', value);
+      url.searchParams.set("search", value);
     } else {
-      url.searchParams.delete('search');
+      url.searchParams.delete("search");
     }
-    window.history.replaceState({}, '', url.toString());
+    window.history.replaceState({}, "", url.toString());
   };
-  
+
   // Update search term if URL changes (e.g., back button)
   useEffect(() => {
     const handlePopState = () => {
       setSearchTerm(getInitialSearchTerm());
     };
-    
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
   const {
@@ -100,8 +118,28 @@ export default function CommissionsTab() {
     placeholderData: keepPreviousData,
   });
 
-  console.log(data);
-  console.log(data?.docs[0]);
+  // Filter data based on search term
+  const filteredData = data?.docs
+    ? {
+        ...data,
+        docs: data.docs.filter((commission) => {
+          const searchLower = searchTerm.toLowerCase();
+          const email = commission.app_user?.email?.toLowerCase() || "";
+          const firstName = commission.app_user?.firstname?.toLowerCase() || "";
+          const lastName = commission.app_user?.lastname?.toLowerCase() || "";
+          const role = commission.app_user?.role?.toLowerCase() || "";
+
+          return (
+            email.includes(searchLower) ||
+            firstName.includes(searchLower) ||
+            lastName.includes(searchLower) ||
+            role.includes(searchLower) ||
+            `${firstName} ${lastName}`.includes(searchLower) ||
+            `${lastName} ${firstName}`.includes(searchLower)
+          );
+        }),
+      }
+    : data;
 
   if (isLoading) {
     return <TabSkeleton />;
@@ -133,46 +171,23 @@ export default function CommissionsTab() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calculator className="w-5 h-5" />
-          Gestion et calcul des Commissions
-        </CardTitle>
-        <CardDescription>
-          Consultez, gérez et créez les commissions pour tous les employés.
-        </CardDescription>
+      <CardHeader className="gap-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col gap-2">
+            <CardTitle className="flex items-center gap-2">
+              <Calculator className="w-5 h-5" />
+              Gestion et calcul des Commissions
+            </CardTitle>
+            <CardDescription>
+              Consultez, gérez et créez les commissions pour tous les employés.
+            </CardDescription>
+          </div>
+          <Button onClick={() => console.log("Create commission")}>
+            Créer une commission
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Summary Cards */}
-        {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <DollarSignIcon className="w-4 h-4 text-green-600" />
-                <div>
-                  <p className="text-2xl font-bold">€{0}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Total commissions
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Calculator className="w-4 h-4 text-purple-600" />
-                <div>
-                  <p className="text-2xl font-bold">{data?.totalDocs || 0}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Total Enregistrements
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div> */}
-
         <Alert className="items-center">
           <Calculator className="h-4 w-4" />
           <AlertDescription>
@@ -185,15 +200,10 @@ export default function CommissionsTab() {
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div className="flex items-center gap-2 flex-1">
-            <Search className="w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher employés ou codes..."
-              value={searchTerm}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="max-w-sm"
-            />
-          </div>
+          <SearchInput
+            searchTerm={searchTerm}
+            onSearchChange={handleSearchChange}
+          />
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-muted-foreground" />
             <Select value={periodFilter} onValueChange={setPeriodFilter}>
@@ -210,98 +220,108 @@ export default function CommissionsTab() {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Nom et prénom</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Production</TableHead>
-                <TableHead>Encours</TableHead>
-                <TableHead className="ml-auto text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.docs.map((commission) => (
-                <TableRow key={commission.id}>
-                  <TableCell className="font-medium">
-                    {commission.app_user.email}
-                  </TableCell>
-                  <TableCell>
-                    {commission.app_user.lastname}{" "}
-                    {commission.app_user.firstname}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{commission.app_user.role}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    {commission.informations?.production ? (
-                      <Badge variant="secondary">
-                        {commission.informations?.production}
-                      </Badge>
-                    ) : null}
-                  </TableCell>
-                  <TableCell>
-                    {commission.informations?.encours ? (
-                      <Badge variant="secondary">
-                        {commission.informations?.encours}
-                      </Badge>
-                    ) : null}
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Ouvrir le menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => console.log("View", commission.id)}
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          <span>Voir</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => console.log("Update", commission.id)}
-                        >
-                          <Edit className="mr-2 h-4 w-4" />
-                          <span>Modifier</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => console.log("Delete", commission.id)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          <span>Supprimer</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => console.log("Export", commission.id)}
-                        >
-                          <Download className="mr-2 h-4 w-4" />
-                          <span>Exporter</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            console.log("Send email", commission.id)
-                          }
-                        >
-                          <Mail className="mr-2 h-4 w-4" />
-                          <span>Envoyer email</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+        {/* Table or No Results */}
+        {filteredData?.docs.length === 0 && searchTerm ? (
+          <div className="p-6 flex items-center justify-center">
+            <p className="text-gray-600">
+              Aucun résultat trouvé pour "{searchTerm}"
+            </p>
+          </div>
+        ) : (
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Nom et prénom</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Production</TableHead>
+                  <TableHead>Encours</TableHead>
+                  <TableHead className="ml-auto text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {filteredData?.docs.map((commission) => (
+                  <TableRow key={commission.id}>
+                    <TableCell className="font-medium">
+                      {commission.app_user.email}
+                    </TableCell>
+                    <TableCell>
+                      {commission.app_user.lastname}{" "}
+                      {commission.app_user.firstname}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {commission.app_user.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {commission.informations?.production ? (
+                        <Badge variant="secondary">
+                          {commission.informations?.production}
+                        </Badge>
+                      ) : null}
+                    </TableCell>
+                    <TableCell>
+                      {commission.informations?.encours ? (
+                        <Badge variant="secondary">
+                          {commission.informations?.encours}
+                        </Badge>
+                      ) : null}
+                    </TableCell>
+
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Ouvrir le menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => console.log("View", commission.id)}
+                          >
+                            <Eye className="mr-2 h-4 w-4" />
+                            <span>Voir</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => console.log("Update", commission.id)}
+                          >
+                            <Edit className="mr-2 h-4 w-4" />
+                            <span>Modifier</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => console.log("Delete", commission.id)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            <span>Supprimer</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => console.log("Export", commission.id)}
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            <span>Exporter</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              console.log("Send email", commission.id)
+                            }
+                          >
+                            <Mail className="mr-2 h-4 w-4" />
+                            <span>Envoyer email</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
         {/* Pagination */}
         {data?.totalPages > 1 && (
