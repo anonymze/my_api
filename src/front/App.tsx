@@ -1,8 +1,8 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { queryClient } from "./api/_queries";
 import CommissionPage from "./app/home";
 import LoginPage from "./app/login";
-import { queryClient } from "./api/_queries";
 import { AuthProvider, useAuth } from "./context/auth-context";
 
 function AppContent() {
@@ -17,7 +17,7 @@ function AppContent() {
   }
 
   if (!isAuthenticated) {
-    return <LoginPage onLogin={login} />;
+    return <LoginPage />;
   }
 
   return <CommissionPage />;

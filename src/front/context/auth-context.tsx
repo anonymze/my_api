@@ -1,3 +1,4 @@
+import type { AppUser } from "@/front/types/user";
 import {
   createContext,
   useContext,
@@ -6,20 +7,10 @@ import {
   type ReactNode,
 } from "react";
 
-interface User {
-  email: string;
-  name: string;
-  role: string;
-}
-
 interface AuthContextType {
-  user: User | null;
+  token: string | null;
   isAuthenticated: boolean;
-  login: (credentials: {
-    email: string;
-    password: string;
-    rememberMe: boolean;
-  }) => Promise<void>;
+  login: (appUser: AppUser) => void;
   logout: () => void;
   isLoading: boolean;
 }
@@ -27,51 +18,33 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored authentication on mount
-    const storedUser = localStorage.getItem("commission-user");
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        localStorage.removeItem("commission-user");
-      }
+    // Check for stored JWT token on mount
+    const storedToken = localStorage.getItem("commission-jwt-token");
+    if (storedToken) {
+      setToken(storedToken);
     }
     setIsLoading(false);
   }, []);
 
-  const login = async (credentials: {
-    email: string;
-    password: string;
-    rememberMe: boolean;
-  }) => {
-    // Mock user data - in real app, this would come from API
-    const mockUser: User = {
-      email: credentials.email,
-      name: "Admin User",
-      role: "Administrator",
-    };
-
-    setUser(mockUser);
-
-    if (credentials.rememberMe) {
-      localStorage.setItem("commission-user", JSON.stringify(mockUser));
-    }
+  const login = (appUser: AppUser) => {
+    setToken(appUser.token);
+    localStorage.setItem("commission-jwt-token", appUser.token);
   };
 
   const logout = () => {
-    setUser(null);
-    localStorage.removeItem("commission-user");
+    setToken(null);
+    localStorage.removeItem("commission-jwt-token");
   };
 
   return (
     <AuthContext.Provider
       value={{
-        user,
-        isAuthenticated: !!user,
+        token,
+        isAuthenticated: !!token,
         login,
         logout,
         isLoading,

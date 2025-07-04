@@ -8,8 +8,8 @@ const server = Bun.serve({
     "/api/login": loginRoute,
     "/api/protected": protectedRoute,
   },
-  // fallback on all routes
-  // fetch(_) {
+
+  // fetch(request) {
   //   return new Response("Not Found", { status: 404 });
   // },
 

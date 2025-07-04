@@ -1,6 +1,4 @@
-import type React from "react";
-
-import { useLoginMutation, type LoginCredentials } from "@/front/api/auth";
+import { loginQuery } from "@/front/api/queries/login-queries";
 import logo from "@/front/assets/images/logo.png";
 import { Alert, AlertDescription } from "@/front/components/ui/alert";
 import { Button } from "@/front/components/ui/button";
@@ -13,64 +11,40 @@ import {
 } from "@/front/components/ui/card";
 import { Input } from "@/front/components/ui/input";
 import { Label } from "@/front/components/ui/label";
+import type { AppUser } from "@/front/types/user";
+import { useForm } from "@tanstack/react-form";
+import { useMutation } from "@tanstack/react-query";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import { useState } from "react";
 
-interface LoginPageProps {
-  onLogin: (credentials: {
-    email: string;
-    password: string;
-    rememberMe: boolean;
-  }) => void;
-}
-
-export default function LoginPage({ onLogin }: LoginPageProps) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
+export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
 
-  const loginMutation = useLoginMutation();
+  const loginMutation = useMutation({
+    mutationFn: loginQuery,
+    onError: (error: any) => {
+      console.error("Login error:", error);
+    },
+    onSuccess: (data: AppUser) => {
+      console.log("Login successful:", data);
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    loginMutation.reset(); // Clear previous mutation errors
+  const form = useForm({
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+    onSubmit: async ({ value }) => {
+      loginMutation.mutate(value);
+    },
+  });
 
-    // Basic validation
-    if (!email || !password) {
-      setError("Veuillez remplir tous les champs");
-      return;
-    }
+  const isLoading = loginMutation.isPending || form.state.isSubmitting;
 
-    if (!email.includes("@")) {
-      setError("Veuillez entrer une adresse email valide");
-      return;
-    }
-
-    const credentials: LoginCredentials = { email, password, rememberMe };
-
-    loginMutation.mutate(credentials, {
-      onSuccess: (data) => {
-        onLogin({ email, password, rememberMe });
-      },
-      onError: (error) => {
-        // Error is automatically handled by React Query state
-        console.error("Login failed:", error);
-      },
-    });
-  };
-
-  const handleDemoLogin = () => {
-    setEmail("admin@company.com");
-    setPassword("admin123");
-  };
-
-  const isLoading = loginMutation.isPending;
-
-  // Show either validation error or mutation error
-  const displayError = error || loginMutation.error?.message;
+  // Show either form validation errors or mutation error
+  const displayError =
+    form.state.errors.join(", ") || loginMutation.error?.message;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -102,121 +76,119 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               </Alert>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Entrez votre email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                form.handleSubmit();
+              }}
+              className="space-y-4"
+            >
+              <form.Field
+                name="email"
+                validators={{
+                  onSubmit: ({ value }) => {
+                    if (!value) return "Veuillez entrer votre email";
+                    if (!value.includes("@"))
+                      return "Veuillez entrer une adresse email valide";
+                    return undefined;
+                  },
+                }}
+              >
+                {(field) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="Entrez votre email"
+                        value={field.state.value}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        onBlur={field.handleBlur}
+                        className="pl-10"
+                        disabled={isLoading}
+                      />
+                    </div>
+                    {field.state.meta.errors.length > 0 && (
+                      <p className="text-sm text-red-600">
+                        {field.state.meta.errors[0]}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </form.Field>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Mot de passe</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Entrez votre mot de passe"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10"
-                    disabled={isLoading}
-                  />
+              <form.Field
+                name="password"
+                validators={{
+                  onSubmit: ({ value }) => {
+                    if (!value) return "Veuillez entrer votre mot de passe";
+                    return undefined;
+                  },
+                }}
+              >
+                {(field) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Mot de passe</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Entrez votre mot de passe"
+                        value={field.state.value}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        onBlur={field.handleBlur}
+                        className="pl-10 pr-10"
+                        disabled={isLoading}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                        disabled={isLoading}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-gray-400" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-gray-400" />
+                        )}
+                      </Button>
+                    </div>
+                    {field.state.meta.errors.length > 0 && (
+                      <p className="text-sm text-red-600">
+                        {field.state.meta.errors[0]}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </form.Field>
+
+              <form.Subscribe
+                selector={(state) => [state.canSubmit, state.isSubmitting]}
+              >
+                {([canSubmit, isSubmitting]) => (
                   <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={isLoading}
+                    type="submit"
+                    className="w-full mt-2"
+                    disabled={!canSubmit || isLoading}
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Connexion en cours...
+                      </>
                     ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
+                      "Se connecter"
                     )}
                   </Button>
-                </div>
-              </div>
-
-              {/* <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="remember"
-                    checked={rememberMe}
-                    onCheckedChange={(checked) =>
-                      setRememberMe(checked as boolean)
-                    }
-                    disabled={isLoading}
-                  />
-                  <Label htmlFor="remember" className="text-sm font-normal">
-                    Se souvenir de moi
-                  </Label>
-                </div>
-                <Button
-                  variant="link"
-                  className="px-0 font-normal text-sm"
-                  disabled={isLoading}
-                >
-                  Mot de passe oublié ?
-                </Button>
-              </div> */}
-
-              <Button
-                type="submit"
-                className="w-full mt-3"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Connexion en cours...
-                  </>
-                ) : (
-                  "Se connecter"
                 )}
-              </Button>
+              </form.Subscribe>
             </form>
-            {/*
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Accès Démo
-                </span>
-              </div>
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full bg-transparent"
-              onClick={handleDemoLogin}
-              disabled={isLoading}
-            >
-              Utiliser les identifiants démo
-            </Button>
-
-            <div className="text-center text-sm text-gray-600">
-              <p>Identifiants démo :</p>
-              <p className="font-mono text-xs bg-gray-100 p-2 rounded mt-1">
-                Email: admin@company.com
-                <br />
-                Password: admin123
-              </p>
-            </div> */}
           </CardContent>
         </Card>
 
@@ -225,17 +197,6 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           <p>
             © {new Date().getFullYear()} Groupe Valorem. Tous droits réservés.
           </p>
-          {/* <div className="flex justify-center space-x-4 mt-2">
-            <Button variant="link" className="px-0 text-xs">
-              Politique de Confidentialité
-            </Button>
-            <Button variant="link" className="px-0 text-xs">
-              Conditions d'Utilisation
-            </Button>
-            <Button variant="link" className="px-0 text-xs">
-              Support
-            </Button>
-          </div> */}
         </div>
       </div>
     </div>
