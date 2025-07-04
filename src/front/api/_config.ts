@@ -22,9 +22,13 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Authentication failed, clear local storage and reload
+      // Only reload if user was logged in (had a token)
+      const hadToken = localStorage.getItem("commission-jwt-token");
       localStorage.removeItem("commission-jwt-token");
-      window.location.reload();
+      if (hadToken) {
+        alert("Votre session a expiré. Veuillez vous reconnecter.");
+        window.location.reload();
+      }
     }
     return Promise.reject(error);
   },

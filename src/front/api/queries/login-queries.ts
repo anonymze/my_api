@@ -9,7 +9,7 @@ export async function loginQuery({
   email: string;
   password: string;
 }) {
-  const response = await api.post<AppUser>("/api/app-users/login", {
+  const response = await api.post<AppUser>("/api/admins/login", {
     email,
     password,
   });

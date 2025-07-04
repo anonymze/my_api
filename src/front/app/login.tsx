@@ -15,18 +15,20 @@ import type { AppUser } from "@/front/types/user";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
-import { useState } from "react";
+import React from "react";
+import { AuthContext } from "../context/auth-context";
 
 export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
+  const { login } = React.use(AuthContext);
 
   const loginMutation = useMutation({
     mutationFn: loginQuery,
     onError: (error: any) => {
-      console.error("Login error:", error);
+      // console.error("Login error:", error);
     },
     onSuccess: (data: AppUser) => {
-      console.log("Login successful:", data);
+      login(data);
     },
   });
 
@@ -43,8 +45,9 @@ export default function LoginPage() {
   const isLoading = loginMutation.isPending || form.state.isSubmitting;
 
   // Show either form validation errors or mutation error
-  const displayError =
-    form.state.errors.join(", ") || loginMutation.error?.message;
+  const displayError = loginMutation.error
+    ? "Vos identifiants sont incorrects."
+    : undefined;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -104,7 +107,7 @@ export default function LoginPage() {
                         id="email"
                         type="email"
                         placeholder="Entrez votre email"
-                        value={field.state.value}
+                        // value={field.state.value}
                         onChange={(e) => field.handleChange(e.target.value)}
                         onBlur={field.handleBlur}
                         className="pl-10"
@@ -138,7 +141,7 @@ export default function LoginPage() {
                         id="password"
                         type={showPassword ? "text" : "password"}
                         placeholder="Entrez votre mot de passe"
-                        value={field.state.value}
+                        // value={field.state.value}
                         onChange={(e) => field.handleChange(e.target.value)}
                         onBlur={field.handleBlur}
                         className="pl-10 pr-10"

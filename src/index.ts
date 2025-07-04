@@ -1,12 +1,11 @@
 import indexHtml from "./front/index.html";
-import { loginRoute, protectedRoute } from "./server/routes";
 
 const server = Bun.serve({
   port: 3000,
   routes: {
     "/*": indexHtml,
-    "/api/login": loginRoute,
-    "/api/protected": protectedRoute,
+    // "/api/login": loginRoute,
+    // "/api/protected": protectedRoute,
   },
 
   // fetch(request) {
