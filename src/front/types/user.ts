@@ -8,6 +8,7 @@ export interface AppUser {
 
 export interface User {
   id: string;
+  apiKey: string;
   lastname: string;
   firstname: string;
   email: string;

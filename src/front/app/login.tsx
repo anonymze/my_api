@@ -28,6 +28,7 @@ export default function LoginPage() {
       // console.error("Login error:", error);
     },
     onSuccess: (data: AppUser) => {
+      console.log(data);
       login(data);
     },
   });
