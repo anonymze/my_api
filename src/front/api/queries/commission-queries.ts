@@ -1,5 +1,6 @@
 import type { QueryKey } from "@tanstack/react-query";
 
+import type { PaginatedResponse } from "@/front/types/response";
 import { api } from "../_config";
 
 export interface Commission {
@@ -36,7 +37,10 @@ export async function getCommissionsQuery({
 }) {
   const [, filters] = queryKey;
 
-  const response = await api.get("/api/commissions", { params: filters });
+  const response = await api.get<PaginatedResponse<Commission>>(
+    "/api/commissions",
+    { params: filters },
+  );
 
   return response.data;
 }

@@ -19,7 +19,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = (appUser: AppUser) => {
     setToken(appUser.user.apiKey);
-    localStorage.setItem("commission-jwt-token", appUser.user.apiKey);
+    localStorage.setItem(
+      "commission-jwt-token",
+      "admins API-Key " + appUser.user.apiKey,
+    );
   };
 
   const logout = () => {
