@@ -6,7 +6,9 @@ import type {
   CommissionImport,
   SuppliersCommissionsColumn,
 } from "@/front/types/commission";
+import type { Media } from "@/front/types/media";
 import type { PaginatedResponse } from "@/front/types/response";
+import type { Supplier } from "@/front/types/supplier";
 import { api } from "../_config";
 
 export async function getCommissionsQuery({
@@ -68,5 +70,20 @@ export async function getCommissionsImportQuery({
     },
   );
 
+  return response.data;
+}
+
+export async function deleteCommissionImportQuery(
+  chatRoomId: CommissionImport["id"],
+) {
+  const response = await api.delete(`/api/commission-imports/${chatRoomId}`);
+  return response.data;
+}
+
+export async function createCommissionImportQuery(params: {
+  supplier: Supplier["id"];
+  file: Media["id"][];
+}) {
+  const response = await api.post("/api/commission-imports", params);
   return response.data;
 }
