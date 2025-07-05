@@ -44,6 +44,7 @@ import {
   MoreHorizontal,
   Search,
   Trash2,
+  XIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { TabSkeleton } from "../../home";
@@ -56,13 +57,26 @@ const SearchInput = ({
   searchTerm: string;
   onSearchChange: (value: string) => void;
 }) => (
-  <div className="flex items-center gap-2 flex-1">
+  <div className="flex items-center space-x-2 max-w-sm">
     <Search className="w-4 h-4 text-muted-foreground" />
-    <Input
-      placeholder="Rechercher employés ou codes..."
-      onChange={(e) => onSearchChange(e.target.value)}
-      className="max-w-sm"
-    />
+    <div className="relative">
+      <Input
+        placeholder="Rechercher..."
+        value={searchTerm}
+        onChange={(e) => onSearchChange(e.target.value)}
+        className="h-8 pr-8"
+      />
+      {searchTerm && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onSearchChange("")}
+          className="absolute right-0 top-0 h-8 w-8 p-0 hover:bg-transparent"
+        >
+          <XIcon className="h-3 w-3 text-gray-400 hover:text-gray-600" />
+        </Button>
+      )}
+    </div>
   </div>
 );
 

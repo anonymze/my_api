@@ -218,12 +218,24 @@ export default function ImportTab() {
               </Label>
               <div className="flex items-center space-x-2 max-w-sm">
                 <Search className="w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher..."
-                  value={searchSelectedSuppliers}
-                  onChange={(e) => setSearchSelectedSuppliers(e.target.value)}
-                  className="h-8"
-                />
+                <div className="relative">
+                  <Input
+                    placeholder="Rechercher..."
+                    value={searchSelectedSuppliers}
+                    onChange={(e) => setSearchSelectedSuppliers(e.target.value)}
+                    className="h-8 pr-8"
+                  />
+                  {searchSelectedSuppliers && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSearchSelectedSuppliers("")}
+                      className="absolute right-0 top-0 h-8 w-8 p-0 hover:bg-transparent"
+                    >
+                      <X className="h-3 w-3 text-gray-400 hover:text-gray-600" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
             <div className="space-y-4">
