@@ -40,6 +40,39 @@ export async function getAppUserCommissionsCodeQuery({
   return response.data;
 }
 
+export const createAppUserCommissionCodeQuery = async (
+  data: {
+    app_user: string;
+    code: { code: string; id?: string | null }[];
+  }
+) => {
+  const response = await api.post("/api/app-users-commissions-code", data);
+  return response.data;
+};
+
+export const updateAppUserCommissionCodeQuery = async (
+  data: {
+    app_user: string;
+    code: { code: string; id?: string | null }[];
+    appUserCodeId: AppUsersCommissionsCode["id"];
+  }
+) => {
+  const response = await api.patch(
+    `/api/app-users-commissions-code/${data.appUserCodeId}`,
+    data
+  );
+  return response.data;
+};
+
+export async function deleteAppUserCommissionCodeQuery(
+  appUserCodeId: AppUsersCommissionsCode["id"]
+) {
+  const response = await api.delete(
+    `/api/app-users-commissions-code/${appUserCodeId}`
+  );
+  return response.data;
+}
+
 export async function getSupplierCommissionsColumnQuery({
   queryKey,
 }: {

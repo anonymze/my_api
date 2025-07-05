@@ -1,5 +1,10 @@
 import { getAppUsersQuery } from "@/front/api/queries/app-user-queries";
-import { getAppUserCommissionsCodeQuery } from "@/front/api/queries/commission-queries";
+import {
+  createAppUserCommissionCodeQuery,
+  deleteAppUserCommissionCodeQuery,
+  getAppUserCommissionsCodeQuery,
+  updateAppUserCommissionCodeQuery,
+} from "@/front/api/queries/commission-queries";
 import { Button } from "@/front/components/ui/button";
 import {
   Card,
@@ -22,8 +27,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/front/components/ui/popover";
-import { useQuery } from "@tanstack/react-query";
-import { ChevronsUpDown, CodeIcon, Search, X } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronsUpDown, CodeIcon, Loader2, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { TabSkeleton } from "../home";
 
@@ -31,6 +36,56 @@ export default function UsersCodeTab() {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [userCodes, setUserCodes] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Mutations
+  const deleteUserCodeMutation = useMutation({
+    mutationFn: deleteAppUserCommissionCodeQuery,
+    onSuccess: (_, deletedId) => {
+      queryClient.invalidateQueries({ queryKey: ["commissions-code"] });
+
+      // Update local state to remove the deleted user
+      const deletedMapping = existingCodeUsers.find(
+        (mapping) => mapping.id === deletedId,
+      );
+      if (deletedMapping?.app_user?.id) {
+        setSelectedUsers((prev) =>
+          prev.filter((id) => id !== deletedMapping.app_user.id),
+        );
+        setUserCodes((prev) => {
+          const newCodes = { ...prev };
+          delete newCodes[deletedMapping.app_user.id];
+          return newCodes;
+        });
+      }
+    },
+  });
+
+  const createUserCodeMutation = useMutation({
+    mutationFn: createAppUserCommissionCodeQuery,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["commissions-code"] });
+      // Local state will be updated by the useEffect when the query refetches
+    },
+    onError: (error) => {
+      alert(
+        "Une erreur est survenue. Vérifiez que vous n'avez pas entré deux fois le même code sur la page.",
+      );
+    },
+  });
+
+  const updateUserCodeMutation = useMutation({
+    mutationFn: updateAppUserCommissionCodeQuery,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["commissions-code"] });
+      // Local state will be updated by the useEffect when the query refetches
+    },
+    onError: (error) => {
+      alert(
+        "Une erreur est survenue. Vérifiez que vous n'avez pas entré deux fois le même code sur la page.",
+      );
+    },
+  });
 
   const {
     error: errorCodeUsers,
@@ -89,7 +144,7 @@ export default function UsersCodeTab() {
       const existingData: Record<string, string> = {};
       existingCodeUsers.forEach((mapping) => {
         if (mapping.app_user?.id) {
-          const codes = mapping.code.map(c => c.code).join(", ");
+          const codes = mapping.code.map((c) => c.code).join(", ");
           existingData[mapping.app_user.id] = codes;
         }
       });
@@ -111,15 +166,59 @@ export default function UsersCodeTab() {
   };
 
   const removeUser = (userId: string) => {
-    // Remove user from selected list
-    setSelectedUsers((prev) => prev.filter((id) => id !== userId));
-    // Remove codes for this user
-    setUserCodes((prev) => {
-      const newCodes = { ...prev };
-      delete newCodes[userId];
-      return newCodes;
-    });
+    const existingMapping = existingCodeUsers.find(
+      (mapping) => mapping.app_user?.id === userId,
+    );
+
+    if (existingMapping) {
+      // Remove from database
+      deleteUserCodeMutation.mutate(existingMapping.id);
+    } else {
+      // Remove from local state (new user not yet saved)
+      setSelectedUsers((prev) => prev.filter((id) => id !== userId));
+      setUserCodes((prev) => {
+        const newCodes = { ...prev };
+        delete newCodes[userId];
+        return newCodes;
+      });
+    }
   };
+
+  const saveUserCode = (userId: string) => {
+    const codeString = userCodes[userId];
+    if (!codeString) return;
+
+    // Parse codes from comma-separated string
+    const codes = codeString
+      .split(",")
+      .map((code) => code.trim())
+      .filter((code) => code.length > 0)
+      .map((code) => ({ code, id: null }));
+
+    const existingMapping = existingCodeUsers.find(
+      (mapping) => mapping.app_user?.id === userId,
+    );
+
+    if (existingMapping) {
+      // Update existing mapping
+      updateUserCodeMutation.mutate({
+        app_user: userId,
+        code: codes,
+        appUserCodeId: existingMapping.id,
+      });
+    } else {
+      // Create new mapping
+      createUserCodeMutation.mutate({
+        app_user: userId,
+        code: codes,
+      });
+    }
+  };
+
+  const isOperating =
+    createUserCodeMutation.isPending ||
+    updateUserCodeMutation.isPending ||
+    deleteUserCodeMutation.isPending;
 
   // Get available users (not yet selected)
   const getAvailableUsers = () => {
@@ -206,9 +305,10 @@ export default function UsersCodeTab() {
               Associez un utilisateur à des codes uniques de commission.
             </CardDescription>
           </div>
-          <Button onClick={() => console.log("Create commission")}>
-            Sauvegarder
-          </Button>
+          {/* Loading indicator */}
+          {isOperating && (
+            <Loader2 className="h-5 w-5 animate-spin text-black" />
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -222,6 +322,7 @@ export default function UsersCodeTab() {
                 role="combobox"
                 aria-expanded={open}
                 className="w-full justify-between"
+                disabled={isOperating}
               >
                 Choisir un utilisateur...
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -272,6 +373,7 @@ export default function UsersCodeTab() {
                     value={searchSelectedUsers}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     className="h-8 pr-8"
+                    disabled={isOperating}
                   />
                   {searchSelectedUsers && (
                     <Button
@@ -279,6 +381,7 @@ export default function UsersCodeTab() {
                       size="sm"
                       onClick={() => handleSearchChange("")}
                       className="absolute right-0 top-0 h-8 w-8 p-0 hover:bg-transparent"
+                      disabled={isOperating}
                     >
                       <X className="h-3 w-3 text-gray-400 hover:text-gray-600" />
                     </Button>
@@ -314,6 +417,7 @@ export default function UsersCodeTab() {
                         size="sm"
                         onClick={() => removeUser(userId)}
                         className="h-8 w-8 p-0 border-red-200 hover:bg-red-50"
+                        disabled={isOperating}
                       >
                         <X className="h-4 w-4 text-red-500" />
                       </Button>
@@ -340,11 +444,23 @@ export default function UsersCodeTab() {
                           }))
                         }
                         className="w-full"
+                        disabled={isOperating}
                       />
                       <p className="text-xs text-gray-500">
                         Séparez chaque code par une virgule (,) pour ajouter
                         plusieurs codes
                       </p>
+
+                      {/* Individual Save Button */}
+                      <div className="flex justify-end mt-3">
+                        <Button
+                          onClick={() => saveUserCode(userId)}
+                          disabled={isOperating}
+                          size="sm"
+                        >
+                          Sauvegarder
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 );
