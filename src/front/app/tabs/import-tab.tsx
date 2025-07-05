@@ -195,15 +195,6 @@ export default function ImportTab() {
           </div>
         )}
 
-        {getAvailableSuppliers().length === 0 &&
-          selectedSuppliers.length > 0 && (
-            <div className="text-center py-4">
-              <p className="text-sm text-gray-500">
-                Tous les fournisseurs ont été ajoutés
-              </p>
-            </div>
-          )}
-
         {/* Selected Suppliers with File Upload */}
         {selectedSuppliers.length > 0 && (
           <div className="space-y-2.5">
