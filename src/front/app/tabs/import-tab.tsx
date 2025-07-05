@@ -29,7 +29,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const allowedTypes = [
   "text/csv",
@@ -45,7 +45,14 @@ export default function ImportTab() {
   );
   const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
-  const [searchSelectedSuppliers, setSearchSelectedSuppliers] = useState("");
+  
+  // Get initial search term from URL
+  const getInitialSearchTerm = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('supplierSearch') || '';
+  };
+  
+  const [searchSelectedSuppliers, setSearchSelectedSuppliers] = useState(getInitialSearchTerm);
 
   // Expanded suppliers list - replace with actual data from your API
   const suppliers = [
@@ -105,6 +112,28 @@ export default function ImportTab() {
       (supplier) => !selectedSuppliers.includes(supplier.id),
     );
   };
+
+  // Update URL when search term changes
+  const handleSearchChange = (value: string) => {
+    setSearchSelectedSuppliers(value);
+    const url = new URL(window.location.href);
+    if (value) {
+      url.searchParams.set('supplierSearch', value);
+    } else {
+      url.searchParams.delete('supplierSearch');
+    }
+    window.history.replaceState({}, '', url.toString());
+  };
+
+  // Update search term if URL changes (e.g., back button)
+  useEffect(() => {
+    const handlePopState = () => {
+      setSearchSelectedSuppliers(getInitialSearchTerm());
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Filter selected suppliers based on search
   const getFilteredSelectedSuppliers = () => {
@@ -222,14 +251,14 @@ export default function ImportTab() {
                   <Input
                     placeholder="Rechercher..."
                     value={searchSelectedSuppliers}
-                    onChange={(e) => setSearchSelectedSuppliers(e.target.value)}
+                    onChange={(e) => handleSearchChange(e.target.value)}
                     className="h-8 pr-8"
                   />
                   {searchSelectedSuppliers && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setSearchSelectedSuppliers("")}
+                      onClick={() => handleSearchChange("")}
                       className="absolute right-0 top-0 h-8 w-8 p-0 hover:bg-transparent"
                     >
                       <X className="h-3 w-3 text-gray-400 hover:text-gray-600" />

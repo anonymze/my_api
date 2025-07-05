@@ -1,6 +1,4 @@
-import { getCommissionsQuery } from "@/front/api/queries/commission-queries";
 import { Alert, AlertDescription } from "@/front/components/ui/alert";
-import { Badge } from "@/front/components/ui/badge";
 import { Button } from "@/front/components/ui/button";
 import {
   Card,
@@ -10,298 +8,360 @@ import {
   CardTitle,
 } from "@/front/components/ui/card";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/front/components/ui/dropdown-menu";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/front/components/ui/command";
 import { Input } from "@/front/components/ui/input";
+import { Label } from "@/front/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/front/components/ui/select";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/front/components/ui/popover";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/front/components/ui/table";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import {
+  BookAlertIcon,
   Calculator,
-  Download,
-  Edit,
-  Eye,
-  Filter,
-  Mail,
-  MoreHorizontal,
+  ChevronsUpDown,
   Search,
-  Trash2,
+  Upload,
+  X,
 } from "lucide-react";
-import { useState } from "react";
-import { TabSkeleton } from "../home";
+import { useEffect, useState } from "react";
+
+const allowedTypes = [
+  "text/csv",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+];
+const allowedExtensions = [".csv", ".xls", ".xlsx"];
 
 export default function UsersCodeTab() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [periodFilter, setPeriodFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
+  const [supplierFiles, setSupplierFiles] = useState<Record<string, File[]>>(
+    {},
+  );
+  const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
+  const [open, setOpen] = useState(false);
 
-  const {
-    isPending,
-    isError,
-    error,
-    data,
-    isLoading,
-    isFetching,
-    isPlaceholderData,
-  } = useQuery({
-    queryKey: [
-      "commissions",
-      {
-        page: currentPage,
-      },
-    ],
-    queryFn: getCommissionsQuery,
-    placeholderData: keepPreviousData,
-  });
+  // Get initial search term from URL
+  const getInitialSearchTerm = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get("supplierSearch") || "";
+  };
 
-  console.log(data);
-  console.log(data?.docs[0]);
+  const [searchSelectedSuppliers, setSearchSelectedSuppliers] =
+    useState(getInitialSearchTerm);
 
-  if (isLoading) {
-    return <TabSkeleton />;
-  }
+  // Expanded suppliers list - replace with actual data from your API
+  const suppliers = [
+    { id: "supplier1", name: "Fournisseur A" },
+    { id: "supplier2", name: "Fournisseur B" },
+    { id: "supplier3", name: "Fournisseur C" },
+    { id: "supplier3s", name: "Fournisseur Cs" },
+    { id: "supplier3ss", name: "Fournisseur Css" },
+    // Add more suppliers as needed...
+  ];
 
-  if (error) {
-    return (
-      <Card>
-        <CardContent className="p-6 flex items-center justify-center">
-          <p className="text-red-600">
-            Erreur lors du chargement des commissions
-          </p>
-        </CardContent>
-      </Card>
+  const validateFile = (file: File): string | null => {
+    const hasValidType = allowedTypes.includes(file.type);
+    const hasValidExtension = allowedExtensions.some((ext) =>
+      file.name.toLowerCase().endsWith(ext),
     );
-  }
 
-  if (!data || !data.docs) {
-    return (
-      <Card>
-        <CardContent className="p-6 flex items-center justify-center">
-          <p className="text-gray-600">
-            Il n'y a pas de commissions disponibles
-          </p>
-        </CardContent>
-      </Card>
+    if (!hasValidType && !hasValidExtension) {
+      return "Le fichier doit être au format CSV, XLS ou XLSX";
+    }
+
+    return null;
+  };
+
+  const handleSupplierAdd = (supplierId: string) => {
+    if (!selectedSuppliers.includes(supplierId)) {
+      setSelectedSuppliers((prev) => [...prev, supplierId]);
+      // Initialize empty files array for this supplier
+      setSupplierFiles((prev) => ({
+        ...prev,
+        [supplierId]: [],
+      }));
+    }
+    setOpen(false);
+  };
+
+  const removeSupplier = (supplierId: string) => {
+    // Remove supplier from selected list
+    setSelectedSuppliers((prev) => prev.filter((id) => id !== supplierId));
+    // Remove all files for this supplier
+    setSupplierFiles((prev) => {
+      const newFiles = { ...prev };
+      delete newFiles[supplierId];
+      return newFiles;
+    });
+    // Remove any errors for this supplier
+    setFileErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[supplierId];
+      return newErrors;
+    });
+  };
+
+  // Get available suppliers (not yet selected)
+  const getAvailableSuppliers = () => {
+    return suppliers.filter(
+      (supplier) => !selectedSuppliers.includes(supplier.id),
     );
-  }
+  };
+
+  // Update URL when search term changes
+  const handleSearchChange = (value: string) => {
+    setSearchSelectedSuppliers(value);
+    const url = new URL(window.location.href);
+    if (value) {
+      url.searchParams.set("supplierSearch", value);
+    } else {
+      url.searchParams.delete("supplierSearch");
+    }
+    window.history.replaceState({}, "", url.toString());
+  };
+
+  // Update search term if URL changes (e.g., back button)
+  useEffect(() => {
+    const handlePopState = () => {
+      setSearchSelectedSuppliers(getInitialSearchTerm());
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  // Filter selected suppliers based on search
+  const getFilteredSelectedSuppliers = () => {
+    if (!searchSelectedSuppliers) return selectedSuppliers;
+
+    return selectedSuppliers.filter((supplierId) => {
+      const supplier = suppliers.find((s) => s.id === supplierId);
+      return supplier?.name
+        .toLowerCase()
+        .includes(searchSelectedSuppliers.toLowerCase());
+    });
+  };
+
+  const handleFileUpload = (supplierId: string, file: File | null) => {
+    if (file) {
+      const error = validateFile(file);
+      if (error) {
+        setFileErrors((prev) => ({ ...prev, [supplierId]: error }));
+        return;
+      } else {
+        setFileErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[supplierId];
+          return newErrors;
+        });
+      }
+
+      // Add file to existing files array
+      setSupplierFiles((prev) => ({
+        ...prev,
+        [supplierId]: [...(prev[supplierId] || []), file],
+      }));
+    }
+  };
+
+  const handleRemoveFile = (supplierId: string, fileIndex: number) => {
+    setSupplierFiles((prev) => ({
+      ...prev,
+      [supplierId]:
+        prev[supplierId]?.filter((_, index) => index !== fileIndex) || [],
+    }));
+  };
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calculator className="w-5 h-5" />
-          Gestion et calcul des Commissions
-        </CardTitle>
-        <CardDescription>
-          Consultez, gérez et créez les commissions pour tous les employés.
-        </CardDescription>
+      <CardHeader className="gap-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col gap-2">
+            <CardTitle className="flex items-center gap-2">
+              <Calculator className="w-5 h-5" />
+              Importation des fichiers globaux de commissions
+            </CardTitle>
+            <CardDescription>
+              Ajoutez, modifiez ou supprimez les fichiers globaux de commissions
+              des fournisseurs
+            </CardDescription>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Summary Cards */}
-        {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <DollarSignIcon className="w-4 h-4 text-green-600" />
-                <div>
-                  <p className="text-2xl font-bold">€{0}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Total commissions
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Calculator className="w-4 h-4 text-purple-600" />
-                <div>
-                  <p className="text-2xl font-bold">{data?.totalDocs || 0}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Total Enregistrements
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div> */}
-
+      <CardContent className="space-y-6">
         <Alert className="items-center">
-          <Calculator className="h-4 w-4" />
+          <BookAlertIcon className="h-4 w-4" />
           <AlertDescription>
-            Les calculs de commissions sont basés sur les données importées et
-            les mappings configurés. Assurez-vous que tous les fichiers sont
-            traités et que les mappings sont corrects avant créer une
-            commission.
+            Les commissions seront basées sur les derniers fichiers globaux de
+            commissions importés ici.
           </AlertDescription>
         </Alert>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div className="flex items-center gap-2 flex-1">
-            <Search className="w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher employés ou codes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-muted-foreground" />
-            <Select value={periodFilter} onValueChange={setPeriodFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Filtrer par période" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les Périodes</SelectItem>
-                <SelectItem value="2024-01">Janvier 2024</SelectItem>
-                <SelectItem value="2024-02">Février 2024</SelectItem>
-                <SelectItem value="2024-03">Mars 2024</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        {/* Supplier Selection */}
 
-        {/* Table */}
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Nom et prénom</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Production</TableHead>
-                <TableHead>Encours</TableHead>
-                <TableHead className="ml-auto text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.docs.map((commission) => (
-                <TableRow key={commission.id}>
-                  <TableCell className="font-medium">
-                    {commission.app_user.email}
-                  </TableCell>
-                  <TableCell>
-                    {commission.app_user.lastname}{" "}
-                    {commission.app_user.firstname}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{commission.app_user.role}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    {commission.informations?.production ? (
-                      <Badge variant="secondary">
-                        {commission.informations?.production}
-                      </Badge>
-                    ) : null}
-                  </TableCell>
-                  <TableCell>
-                    {commission.informations?.encours ? (
-                      <Badge variant="secondary">
-                        {commission.informations?.encours}
-                      </Badge>
-                    ) : null}
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Ouvrir le menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => console.log("View", commission.id)}
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          <span>Voir</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => console.log("Update", commission.id)}
-                        >
-                          <Edit className="mr-2 h-4 w-4" />
-                          <span>Modifier</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => console.log("Delete", commission.id)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          <span>Supprimer</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => console.log("Export", commission.id)}
-                        >
-                          <Download className="mr-2 h-4 w-4" />
-                          <span>Exporter</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            console.log("Send email", commission.id)
-                          }
-                        >
-                          <Mail className="mr-2 h-4 w-4" />
-                          <span>Envoyer email</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Pagination */}
-        {data?.totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Affichage de {(data.page - 1) * data.limit + 1} à{" "}
-              {Math.min(data.page * data.limit, data.totalDocs)} sur{" "}
-              {data.totalDocs} commissions
-            </p>
-            <div className="flex gap-2">
+        <div className="space-y-2.5">
+          <Label htmlFor="supplier-select">Ajouter un fournisseur</Label>
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={!data.hasPrevPage || isFetching}
+                role="combobox"
+                aria-expanded={open}
+                className="w-full justify-between"
               >
-                Précédent
+                Choisir un fournisseur...
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
-              <span className="flex items-center px-3 text-sm">
-                Page {data.page} sur {data.totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => prev + 1)}
-                disabled={!data.hasNextPage || isFetching}
-              >
-                Suivant
-              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[250px] p-0">
+              <Command>
+                <CommandInput placeholder="Rechercher un fournisseur..." />
+                <CommandEmpty>Aucun fournisseur disponible</CommandEmpty>
+                <CommandGroup className="max-h-[230px] overflow-auto">
+                  {getAvailableSuppliers().map((supplier) => (
+                    <CommandItem
+                      key={supplier.id}
+                      value={supplier.name}
+                      onSelect={() => handleSupplierAdd(supplier.id)}
+                    >
+                      {supplier.name}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* Selected Suppliers with File Upload */}
+        {selectedSuppliers.length > 0 && (
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <Label>
+                Fournisseurs sélectionnés ({selectedSuppliers.length})
+              </Label>
+              <div className="flex items-center space-x-2 max-w-sm">
+                <Search className="w-4 h-4 text-muted-foreground" />
+                <div className="relative">
+                  <Input
+                    placeholder="Rechercher..."
+                    value={searchSelectedSuppliers}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    className="h-8 pr-8"
+                  />
+                  {searchSelectedSuppliers && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSearchChange("")}
+                      className="absolute right-0 top-0 h-8 w-8 p-0 hover:bg-transparent"
+                    >
+                      <X className="h-3 w-3 text-gray-400 hover:text-gray-600" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="space-y-4">
+              {getFilteredSelectedSuppliers().map((supplierId) => {
+                const supplier = suppliers.find((s) => s.id === supplierId);
+                const fileCount = supplierFiles[supplierId]?.length || 0;
+                return (
+                  <div
+                    key={supplierId}
+                    className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3"
+                  >
+                    {/* Supplier Header */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium">
+                          {supplier?.name}
+                        </span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeSupplier(supplierId)}
+                        className="h-8 w-8 p-0 border-red-200 hover:bg-red-50"
+                      >
+                        <X className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+
+                    {/* File Upload */}
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Label
+                          htmlFor={`file-${supplierId}`}
+                          className="text-sm text-gray-700"
+                        >
+                          Importer le fichier :
+                        </Label>
+                        <Input
+                          id={`file-${supplierId}`}
+                          type="file"
+                          accept=".csv,.xlsx,.xls"
+                          className="flex-1"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] || null;
+                            handleFileUpload(supplierId, file);
+                            // Reset input to allow same file upload again
+                            e.target.value = "";
+                          }}
+                        />
+                      </div>
+
+                      {fileErrors[supplierId] && (
+                        <p className="text-red-500 text-sm">
+                          {fileErrors[supplierId]}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* File List */}
+                    {supplierFiles[supplierId]?.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-600">
+                            Fichier :
+                          </span>
+                        </div>
+                        <div className="space-y-1">
+                          {supplierFiles[supplierId].map((file, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-2 bg-white rounded text-sm"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <Upload className="h-4 w-4 text-green-600" />
+                                <span className="text-gray-700">
+                                  {file.name}
+                                </span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleRemoveFile(supplierId, index)
+                                }
+                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
