@@ -25,10 +25,18 @@ import {
   BookAlertIcon,
   Calculator,
   ChevronsUpDown,
+  Search,
   Upload,
   X,
 } from "lucide-react";
 import { useState } from "react";
+
+const allowedTypes = [
+  "text/csv",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+];
+const allowedExtensions = [".csv", ".xls", ".xlsx"];
 
 export default function ImportTab() {
   const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
@@ -37,23 +45,19 @@ export default function ImportTab() {
   );
   const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
+  const [searchSelectedSuppliers, setSearchSelectedSuppliers] = useState("");
 
   // Expanded suppliers list - replace with actual data from your API
   const suppliers = [
     { id: "supplier1", name: "Fournisseur A" },
     { id: "supplier2", name: "Fournisseur B" },
     { id: "supplier3", name: "Fournisseur C" },
+    { id: "supplier3s", name: "Fournisseur Cs" },
+    { id: "supplier3ss", name: "Fournisseur Css" },
     // Add more suppliers as needed...
   ];
 
   const validateFile = (file: File): string | null => {
-    const allowedTypes = [
-      "text/csv",
-      "application/vnd.ms-excel",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    ];
-    const allowedExtensions = [".csv", ".xls", ".xlsx"];
-
     const hasValidType = allowedTypes.includes(file.type);
     const hasValidExtension = allowedExtensions.some((ext) =>
       file.name.toLowerCase().endsWith(ext),
@@ -100,6 +104,18 @@ export default function ImportTab() {
     return suppliers.filter(
       (supplier) => !selectedSuppliers.includes(supplier.id),
     );
+  };
+
+  // Filter selected suppliers based on search
+  const getFilteredSelectedSuppliers = () => {
+    if (!searchSelectedSuppliers) return selectedSuppliers;
+
+    return selectedSuppliers.filter((supplierId) => {
+      const supplier = suppliers.find((s) => s.id === supplierId);
+      return supplier?.name
+        .toLowerCase()
+        .includes(searchSelectedSuppliers.toLowerCase());
+    });
   };
 
   const handleFileUpload = (supplierId: string, file: File | null) => {
@@ -152,55 +168,66 @@ export default function ImportTab() {
         <Alert className="items-center">
           <BookAlertIcon className="h-4 w-4" />
           <AlertDescription>
-            Les commissions seront basées sur les fichiers de commissions
-            importés ici, quand vous importez un fichier il écrasera le dernier
-            existant du même fournisseur.
+            Les commissions seront basées sur les derniers fichiers globaux de
+            commissions importés ici.
           </AlertDescription>
         </Alert>
 
         {/* Supplier Selection */}
-        {getAvailableSuppliers().length > 0 && (
-          <div className="space-y-2.5">
-            <Label htmlFor="supplier-select">Ajouter un fournisseur</Label>
-            <Popover open={open} onOpenChange={setOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={open}
-                  className="w-full justify-between"
-                >
-                  Choisir un fournisseur...
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[250px] p-0">
-                <Command>
-                  <CommandInput placeholder="Rechercher un fournisseur..." />
-                  <CommandEmpty>Aucun fournisseur trouvé.</CommandEmpty>
-                  <CommandGroup className="max-h-[230px] overflow-auto">
-                    {getAvailableSuppliers().map((supplier) => (
-                      <CommandItem
-                        key={supplier.id}
-                        value={supplier.name}
-                        onSelect={() => handleSupplierAdd(supplier.id)}
-                      >
-                        {supplier.name}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
-        )}
+
+        <div className="space-y-2.5">
+          <Label htmlFor="supplier-select">Ajouter un fournisseur</Label>
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="w-full justify-between"
+              >
+                Choisir un fournisseur...
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[250px] p-0">
+              <Command>
+                <CommandInput placeholder="Rechercher un fournisseur..." />
+                <CommandEmpty>Aucun fournisseur disponible</CommandEmpty>
+                <CommandGroup className="max-h-[230px] overflow-auto">
+                  {getAvailableSuppliers().map((supplier) => (
+                    <CommandItem
+                      key={supplier.id}
+                      value={supplier.name}
+                      onSelect={() => handleSupplierAdd(supplier.id)}
+                    >
+                      {supplier.name}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
 
         {/* Selected Suppliers with File Upload */}
         {selectedSuppliers.length > 0 && (
           <div className="space-y-2.5">
-            <Label>Fournisseurs sélectionnés</Label>
+            <div className="flex items-center justify-between">
+              <Label>
+                Fournisseurs sélectionnés ({selectedSuppliers.length})
+              </Label>
+              <div className="flex items-center space-x-2 max-w-sm">
+                <Search className="w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher..."
+                  value={searchSelectedSuppliers}
+                  onChange={(e) => setSearchSelectedSuppliers(e.target.value)}
+                  className="h-8"
+                />
+              </div>
+            </div>
             <div className="space-y-4">
-              {selectedSuppliers.map((supplierId) => {
+              {getFilteredSelectedSuppliers().map((supplierId) => {
                 const supplier = suppliers.find((s) => s.id === supplierId);
                 const fileCount = supplierFiles[supplierId]?.length || 0;
                 return (
