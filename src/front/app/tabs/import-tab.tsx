@@ -1,4 +1,8 @@
-import { getCommissionsImportQuery } from "@/front/api/queries/commission-queries";
+import {
+  createCommissionImportQuery,
+  deleteCommissionImportQuery,
+  getCommissionsImportQuery,
+} from "@/front/api/queries/commission-queries";
 import { getSuppliersQuery } from "@/front/api/queries/supplier-queries";
 import { Alert, AlertDescription } from "@/front/components/ui/alert";
 import { Button } from "@/front/components/ui/button";
@@ -23,11 +27,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/front/components/ui/popover";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BookAlertIcon,
   ChevronsUpDown,
   FileIcon,
+  Loader2,
   Search,
   Upload,
   X,
@@ -43,12 +48,9 @@ const allowedTypes = [
 const allowedExtensions = [".csv", ".xls", ".xlsx"];
 
 export default function ImportTab() {
-  const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
-  const [supplierFiles, setSupplierFiles] = useState<
-    Record<string, File | null>
-  >({});
   const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   // Get initial search term from URL
   const getInitialSearchTerm = () => {
@@ -87,38 +89,23 @@ export default function ImportTab() {
     queryFn: getSuppliersQuery,
   });
 
+  // Mutations
+  const createImportMutation = useMutation({
+    mutationFn: createCommissionImportQuery,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["commissions-import"] });
+    },
+  });
+
+  const deleteImportMutation = useMutation({
+    mutationFn: deleteCommissionImportQuery,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["commissions-import"] });
+    },
+  });
+
   const allSuppliers = suppliers?.docs || [];
-  // Existing imports from API (now returns paginated commission imports)
   const existingImports = commissionImports?.docs || [];
-
-  // Auto-load existing supplier imports on component mount
-  useEffect(() => {
-    if (existingImports.length > 0) {
-      const existingIds = existingImports
-        .map((fileItem) => {
-          return fileItem.supplier?.id || fileItem.supplier.id;
-        })
-        .filter(Boolean);
-
-      setSelectedSuppliers((prev) => {
-        const newIds = existingIds.filter((id: string) => !prev.includes(id));
-
-        return [...prev, ...newIds];
-      });
-
-      // Note: Cannot recreate File objects from database
-      // But we'll initialize null for suppliers that have existing files
-      const existingData: Record<string, File | null> = {};
-      existingImports.forEach((fileItem) => {
-        const supplierId = fileItem.supplier?.id || fileItem.supplier.id;
-        if (supplierId) {
-          existingData[supplierId] = null;
-        }
-      });
-
-      setSupplierFiles((prev) => ({ ...prev, ...existingData }));
-    }
-  }, [existingImports]);
 
   const validateFile = (file: File): string | null => {
     const hasValidType = allowedTypes.includes(file.type);
@@ -133,39 +120,21 @@ export default function ImportTab() {
     return null;
   };
 
-  const handleSupplierAdd = (supplierId: string) => {
-    if (!selectedSuppliers.includes(supplierId)) {
-      setSelectedSuppliers((prev) => [supplierId, ...prev]);
-      // Initialize null file for this supplier
-      setSupplierFiles((prev) => ({
-        ...prev,
-        [supplierId]: null,
-      }));
+  const handleRemoveSupplier = (supplierId: string) => {
+    const existingImport = existingImports.find(
+      (importItem) => importItem.supplier.id === supplierId,
+    );
+
+    if (existingImport) {
+      deleteImportMutation.mutate(existingImport.id);
     }
-    setOpen(false);
   };
 
-  const removeSupplier = (supplierId: string) => {
-    // Remove supplier from selected list
-    setSelectedSuppliers((prev) => prev.filter((id) => id !== supplierId));
-    // Remove all files for this supplier
-    setSupplierFiles((prev) => {
-      const newFiles = { ...prev };
-      delete newFiles[supplierId];
-      return newFiles;
-    });
-    // Remove any errors for this supplier
-    setFileErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors[supplierId];
-      return newErrors;
-    });
-  };
-
-  // Get available suppliers (not yet selected)
+  // Get available suppliers (not yet imported)
   const getAvailableSuppliers = () => {
+    const importedSupplierIds = existingImports.map((imp) => imp.supplier.id);
     return allSuppliers.filter(
-      (supplier) => !selectedSuppliers.includes(supplier.id),
+      (supplier) => !importedSupplierIds.includes(supplier.id),
     );
   };
 
@@ -191,13 +160,12 @@ export default function ImportTab() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  // Filter selected suppliers based on search
-  const getFilteredSelectedSuppliers = () => {
-    if (!searchSelectedSuppliers) return selectedSuppliers;
+  // Filter existing imports based on search
+  const getFilteredImports = () => {
+    if (!searchSelectedSuppliers) return existingImports;
 
-    return selectedSuppliers.filter((supplierId) => {
-      const supplier = allSuppliers.find((s) => s.id === supplierId);
-      return supplier?.name
+    return existingImports.filter((importItem) => {
+      return importItem.supplier.name
         .toLowerCase()
         .includes(searchSelectedSuppliers.toLowerCase());
     });
@@ -217,20 +185,14 @@ export default function ImportTab() {
         });
       }
 
-      // Replace the existing file (only 1 file per supplier)
-      setSupplierFiles((prev) => ({
-        ...prev,
-        [supplierId]: file,
-      }));
+      // Upload file to backend immediately
+      createImportMutation.mutate({ file, supplierId });
     }
   };
 
-  const handleRemoveFile = (supplierId: string) => {
-    setSupplierFiles((prev) => ({
-      ...prev,
-      [supplierId]: null,
-    }));
-  };
+  const isUploading = createImportMutation.isPending;
+  const isDeleting = deleteImportMutation.isPending;
+  const isOperating = isUploading || isDeleting;
 
   if (loadingCommissionImports || loadingSuppliers) {
     return <TabSkeleton />;
@@ -259,6 +221,7 @@ export default function ImportTab() {
       </Card>
     );
   }
+
   return (
     <Card>
       <CardHeader className="gap-0">
@@ -266,26 +229,28 @@ export default function ImportTab() {
           <div className="flex flex-col gap-2">
             <CardTitle className="flex items-center gap-2">
               <FileIcon className="w-5 h-5" />
-              Importation des fichiers globaux de commissions
+              Importation des fichiers de commissions
             </CardTitle>
             <CardDescription>
-              Ajoutez, modifiez ou supprimez les fichiers globaux de commissions
-              des fournisseurs
+              Importez des fichiers de commissions par fournisseur
             </CardDescription>
           </div>
+          {/* Loading indicator */}
+          {isOperating && (
+            <Loader2 className="h-5 w-5 animate-spin text-black" />
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
         <Alert className="items-center">
           <BookAlertIcon className="h-4 w-4" />
           <AlertDescription>
-            Les commissions seront basées sur les derniers fichiers globaux de
-            commissions importés ici.
+            Les commissions seront basées sur les derniers fichiers importés
+            ici.
           </AlertDescription>
         </Alert>
 
         {/* Supplier Selection */}
-
         <div className="space-y-2.5">
           <Label htmlFor="supplier-select">Ajouter un fournisseur</Label>
           <Popover open={open} onOpenChange={setOpen}>
@@ -295,6 +260,7 @@ export default function ImportTab() {
                 role="combobox"
                 aria-expanded={open}
                 className="w-full justify-between"
+                disabled={isOperating}
               >
                 Choisir un fournisseur...
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -309,7 +275,21 @@ export default function ImportTab() {
                     <CommandItem
                       key={supplier.id}
                       value={supplier.name}
-                      onSelect={() => handleSupplierAdd(supplier.id)}
+                      onSelect={() => {
+                        // Trigger file input immediately
+                        const fileInput = document.createElement("input");
+                        fileInput.type = "file";
+                        fileInput.accept = ".csv,.xlsx,.xls";
+                        fileInput.onchange = (e) => {
+                          const file = (e.target as HTMLInputElement)
+                            .files?.[0];
+                          if (file) {
+                            handleFileUpload(supplier.id, file);
+                          }
+                        };
+                        fileInput.click();
+                        setOpen(false);
+                      }}
                     >
                       {supplier.name}
                     </CommandItem>
@@ -320,13 +300,11 @@ export default function ImportTab() {
           </Popover>
         </div>
 
-        {/* Selected Suppliers with File Upload */}
-        {selectedSuppliers.length > 0 && (
+        {/* Existing Imports */}
+        {existingImports.length > 0 && (
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <Label>
-                Fournisseurs sélectionnés ({selectedSuppliers.length})
-              </Label>
+              <Label>Fournisseurs importés ({existingImports.length})</Label>
               <div className="flex items-center space-x-2 max-w-sm">
                 <Search className="w-4 h-4 text-muted-foreground" />
                 <div className="relative">
@@ -335,6 +313,7 @@ export default function ImportTab() {
                     value={searchSelectedSuppliers}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     className="h-8 pr-8"
+                    disabled={isOperating}
                   />
                   {searchSelectedSuppliers && (
                     <Button
@@ -342,6 +321,7 @@ export default function ImportTab() {
                       size="sm"
                       onClick={() => handleSearchChange("")}
                       className="absolute right-0 top-0 h-8 w-8 p-0 hover:bg-transparent"
+                      disabled={isOperating}
                     >
                       <X className="h-3 w-3 text-gray-400 hover:text-gray-600" />
                     </Button>
@@ -350,112 +330,54 @@ export default function ImportTab() {
               </div>
             </div>
             <div className="space-y-4">
-              {getFilteredSelectedSuppliers().map((supplierId) => {
-                const supplier = allSuppliers.find((s) => s.id === supplierId);
-                return (
-                  <div
-                    key={supplierId}
-                    className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3"
-                  >
-                    {/* Supplier Header */}
+              {getFilteredImports().map((importItem) => (
+                <div
+                  key={importItem.id}
+                  className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3"
+                >
+                  {/* Supplier Header */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium">
+                        {importItem.supplier.name}
+                      </span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        handleRemoveSupplier(importItem.supplier.id)
+                      }
+                      className="h-8 w-8 p-0 border-red-200 hover:bg-red-50"
+                      disabled={isOperating}
+                    >
+                      <X className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+
+                  {/* File Display */}
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-600">Fichier :</span>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-white rounded text-sm">
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium">
-                          {supplier?.name}
+                        <Upload className="h-4 w-4 text-green-600" />
+                        <span className="text-gray-700">
+                          {importItem.file.filename}
                         </span>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeSupplier(supplierId)}
-                        className="h-8 w-8 p-0 border-red-200 hover:bg-red-50"
-                      >
-                        <X className="h-4 w-4 text-red-500" />
-                      </Button>
                     </div>
-
-                    {/* File Upload */}
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Label
-                          htmlFor={`file-${supplierId}`}
-                          className="text-sm text-gray-700"
-                        >
-                          Importer le fichier :
-                        </Label>
-                        <Input
-                          id={`file-${supplierId}`}
-                          type="file"
-                          accept=".csv,.xlsx,.xls"
-                          className="flex-1"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0] || null;
-                            handleFileUpload(supplierId, file);
-                            // Reset input to allow same file upload again
-                            e.target.value = "";
-                          }}
-                        />
-                      </div>
-
-                      {fileErrors[supplierId] && (
-                        <p className="text-red-500 text-sm">
-                          {fileErrors[supplierId]}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* File List - showing existing or new file (only 1 per supplier) */}
-                    {(() => {
-                      const existingFile = existingImports.find(
-                        (fileItem) =>
-                          (fileItem.supplier?.id || fileItem.supplier.id) ===
-                          supplierId,
-                      );
-                      const newFile = supplierFiles?.[supplierId];
-                      const hasExistingFile = !!existingFile;
-                      const hasNewFile = !!newFile;
-
-                      if (hasExistingFile || hasNewFile) {
-                        return (
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-600">
-                                Fichier :
-                              </span>
-                            </div>
-                            <div className="space-y-1">
-                              <div className="flex items-center justify-between p-2 bg-white rounded text-sm">
-                                <div className="flex items-center space-x-2">
-                                  <Upload className="h-4 w-4 text-green-600" />
-                                  <span className="text-gray-700">
-                                    {hasNewFile
-                                      ? newFile.name
-                                      : hasExistingFile
-                                        ? existingFile.file.filename
-                                        : ""}
-                                  </span>
-                                </div>
-                                {/* Only show remove button for new files, not existing database files */}
-                                {hasNewFile && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleRemoveFile(supplierId)}
-                                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
                   </div>
-                );
-              })}
+
+                  {/* File error display */}
+                  {fileErrors[importItem.supplier.id] && (
+                    <p className="text-red-500 text-sm">
+                      {fileErrors[importItem.supplier.id]}
+                    </p>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )}
