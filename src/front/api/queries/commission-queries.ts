@@ -52,3 +52,17 @@ export async function getSupplierCommissionsColumnQuery({
 
   return response.data;
 }
+
+export async function getGlobalCommissionsImportQuery({
+  queryKey,
+}: {
+  queryKey: QueryKey;
+}) {
+  const [, filters] = queryKey;
+
+  const response = await api.get<any>("/api/globals/commission-imports", {
+    params: filters,
+  });
+
+  return response.data;
+}

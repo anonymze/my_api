@@ -1,3 +1,5 @@
+import { getGlobalCommissionsImportQuery } from "@/front/api/queries/commission-queries";
+import { getSuppliersQuery } from "@/front/api/queries/supplier-queries";
 import { Alert, AlertDescription } from "@/front/components/ui/alert";
 import { Button } from "@/front/components/ui/button";
 import {
@@ -21,6 +23,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/front/components/ui/popover";
+import { useQuery } from "@tanstack/react-query";
 import {
   BookAlertIcon,
   ChevronsUpDown,
@@ -30,6 +33,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { TabSkeleton } from "../home";
 
 const allowedTypes = [
   "text/csv",
@@ -55,15 +59,35 @@ export default function ImportTab() {
   const [searchSelectedSuppliers, setSearchSelectedSuppliers] =
     useState(getInitialSearchTerm);
 
-  // Expanded suppliers list - replace with actual data from your API
-  const suppliers = [
-    { id: "supplier1", name: "Fournisseur A" },
-    { id: "supplier2", name: "Fournisseur B" },
-    { id: "supplier3", name: "Fournisseur C" },
-    { id: "supplier3s", name: "Fournisseur Cs" },
-    { id: "supplier3ss", name: "Fournisseur Css" },
-    // Add more suppliers as needed...
-  ];
+  const {
+    error: errorGlobal,
+    data: global,
+    isLoading: loadingGlobal,
+  } = useQuery({
+    queryKey: [
+      "global-commissions-import",
+      {
+        limit: 0,
+      },
+    ],
+    queryFn: getGlobalCommissionsImportQuery,
+  });
+
+  const {
+    error: errorSuppliers,
+    data: suppliers,
+    isLoading: loadingSuppliers,
+  } = useQuery({
+    queryKey: [
+      "suppliers",
+      {
+        limit: 0,
+      },
+    ],
+    queryFn: getSuppliersQuery,
+  });
+
+  const allSuppliers = suppliers?.docs || [];
 
   const validateFile = (file: File): string | null => {
     const hasValidType = allowedTypes.includes(file.type);
@@ -109,7 +133,7 @@ export default function ImportTab() {
 
   // Get available suppliers (not yet selected)
   const getAvailableSuppliers = () => {
-    return suppliers.filter(
+    return allSuppliers.filter(
       (supplier) => !selectedSuppliers.includes(supplier.id),
     );
   };
@@ -141,7 +165,7 @@ export default function ImportTab() {
     if (!searchSelectedSuppliers) return selectedSuppliers;
 
     return selectedSuppliers.filter((supplierId) => {
-      const supplier = suppliers.find((s) => s.id === supplierId);
+      const supplier = allSuppliers.find((s) => s.id === supplierId);
       return supplier?.name
         .toLowerCase()
         .includes(searchSelectedSuppliers.toLowerCase());
@@ -177,6 +201,34 @@ export default function ImportTab() {
         prev[supplierId]?.filter((_, index) => index !== fileIndex) || [],
     }));
   };
+
+  if (loadingGlobal || loadingSuppliers) {
+    return <TabSkeleton />;
+  }
+
+  if (errorSuppliers || errorGlobal) {
+    return (
+      <Card>
+        <CardContent className="p-6 flex items-center justify-center">
+          <p className="text-red-600">
+            Erreur lors du chargement des fournisseurs
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!suppliers || !suppliers.docs.length) {
+    return (
+      <Card>
+        <CardContent className="p-6 flex items-center justify-center">
+          <p className="text-gray-600">
+            Il n'y a pas de fournisseurs disponibles
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -270,7 +322,7 @@ export default function ImportTab() {
             </div>
             <div className="space-y-4">
               {getFilteredSelectedSuppliers().map((supplierId) => {
-                const supplier = suppliers.find((s) => s.id === supplierId);
+                const supplier = allSuppliers.find((s) => s.id === supplierId);
                 return (
                   <div
                     key={supplierId}
