@@ -1,4 +1,9 @@
-import { getSupplierCommissionsColumnQuery } from "@/front/api/queries/commission-queries";
+import {
+  createSupplierCommissionColumnQuery,
+  deleteSupplierCommissionColumnQuery,
+  getSupplierCommissionsColumnQuery,
+  updateSupplierCommissionColumnQuery,
+} from "@/front/api/queries/commission-queries";
 import { getSuppliersQuery } from "@/front/api/queries/supplier-queries";
 import { Button } from "@/front/components/ui/button";
 import {
@@ -23,8 +28,8 @@ import {
   PopoverTrigger,
 } from "@/front/components/ui/popover";
 import type { Supplier } from "@/front/types/supplier";
-import { useQuery } from "@tanstack/react-query";
-import { ChevronsUpDown, Code, Search, X } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronsUpDown, Code, Loader2, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { TabSkeleton } from "../home";
 
@@ -43,6 +48,46 @@ export default function SupplierMappingTab() {
     >
   >({});
   const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Mutations
+  const deleteSupplierColumnMutation = useMutation({
+    mutationFn: deleteSupplierCommissionColumnQuery,
+    onSuccess: (_, deletedId) => {
+      queryClient.invalidateQueries({ queryKey: ["suppliers-column"] });
+
+      // Update local state to remove the deleted supplier
+      const deletedMapping = existingSupplierColumns.find(
+        (mapping) => mapping.id === deletedId,
+      );
+      if (deletedMapping?.supplier?.id) {
+        setSelectedSuppliers((prev) =>
+          prev.filter((id) => id !== deletedMapping.supplier.id),
+        );
+        setSupplierColumns((prev) => {
+          const newColumns = { ...prev };
+          delete newColumns[deletedMapping.supplier.id];
+          return newColumns;
+        });
+      }
+    },
+  });
+
+  const createSupplierColumnMutation = useMutation({
+    mutationFn: createSupplierCommissionColumnQuery,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["suppliers-column"] });
+      // Local state will be updated by the useEffect when the query refetches
+    },
+  });
+
+  const updateSupplierColumnMutation = useMutation({
+    mutationFn: updateSupplierCommissionColumnQuery,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["suppliers-column"] });
+      // Local state will be updated by the useEffect when the query refetches
+    },
+  });
 
   const {
     error: errorSuppliers,
@@ -136,15 +181,28 @@ export default function SupplierMappingTab() {
   };
 
   const removeSupplier = (supplierId: string) => {
-    // Remove supplier from selected list
-    setSelectedSuppliers((prev) => prev.filter((id) => id !== supplierId));
-    // Remove columns for this supplier
-    setSupplierColumns((prev) => {
-      const newColumns = { ...prev };
-      delete newColumns[supplierId];
-      return newColumns;
-    });
+    const existingMapping = existingSupplierColumns.find(
+      (mapping) => mapping.supplier?.id === supplierId,
+    );
+
+    if (existingMapping) {
+      // Remove from database
+      deleteSupplierColumnMutation.mutate(existingMapping.id);
+    } else {
+      // Remove from local state (new supplier not yet saved)
+      setSelectedSuppliers((prev) => prev.filter((id) => id !== supplierId));
+      setSupplierColumns((prev) => {
+        const newColumns = { ...prev };
+        delete newColumns[supplierId];
+        return newColumns;
+      });
+    }
   };
+
+  const isOperating =
+    createSupplierColumnMutation.isPending ||
+    updateSupplierColumnMutation.isPending ||
+    deleteSupplierColumnMutation.isPending;
 
   // Get available suppliers (not yet selected)
   const getAvailableSuppliers = () => {
@@ -192,13 +250,44 @@ export default function SupplierMappingTab() {
     field: "code" | "type" | "montant",
     value: string,
   ) => {
+    // Only allow letters A-Z (case insensitive)
+    const filteredValue = value.replace(/[^a-zA-Z]/g, "");
+
     setSupplierColumns((prev) => ({
       ...prev,
       [supplierId]: {
         ...(prev[supplierId] || { code: "", type: "", montant: "" }),
-        [field]: value,
+        [field]: filteredValue,
       },
     }));
+  };
+
+  const saveSupplierColumn = (supplierId: string) => {
+    const columnData = supplierColumns[supplierId];
+    if (!columnData) return;
+
+    const existingMapping = existingSupplierColumns.find(
+      (mapping) => mapping.supplier?.id === supplierId,
+    );
+
+    if (existingMapping) {
+      // Update existing mapping
+      updateSupplierColumnMutation.mutate({
+        supplier: supplierId,
+        supplierColumnId: existingMapping.id,
+        code_column_letter: columnData.code,
+        type_column_letter: columnData.type,
+        amount_column_letter: columnData.montant,
+      });
+    } else {
+      // Create new mapping
+      createSupplierColumnMutation.mutate({
+        supplier: supplierId,
+        code_column_letter: columnData.code,
+        type_column_letter: columnData.type,
+        amount_column_letter: columnData.montant,
+      });
+    }
   };
 
   if (loadingSuppliersColumn || loadingSuppliers) {
@@ -242,9 +331,10 @@ export default function SupplierMappingTab() {
               Associez un fournisseur à des noms de colonnes Excel spécifiques.
             </CardDescription>
           </div>
-          <Button onClick={() => console.log("Create commission")}>
-            Sauvegarder
-          </Button>
+          {/* Loading indicator */}
+          {isOperating && (
+            <Loader2 className="h-5 w-5 animate-spin text-black" />
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -259,6 +349,7 @@ export default function SupplierMappingTab() {
                 role="combobox"
                 aria-expanded={open}
                 className="w-full justify-between"
+                disabled={isOperating}
               >
                 Choisir un fournisseur...
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -301,6 +392,7 @@ export default function SupplierMappingTab() {
                     value={searchSelectedSuppliers}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     className="h-8 pr-8"
+                    disabled={isOperating}
                   />
                   {searchSelectedSuppliers && (
                     <Button
@@ -308,6 +400,7 @@ export default function SupplierMappingTab() {
                       size="sm"
                       onClick={() => handleSearchChange("")}
                       className="absolute right-0 top-0 h-8 w-8 p-0 hover:bg-transparent"
+                      disabled={isOperating}
                     >
                       <X className="h-3 w-3 text-gray-400 hover:text-gray-600" />
                     </Button>
@@ -335,6 +428,7 @@ export default function SupplierMappingTab() {
                         size="sm"
                         onClick={() => removeSupplier(supplierId)}
                         className="h-8 w-8 p-0 border-red-200 hover:bg-red-50"
+                        disabled={isOperating}
                       >
                         <X className="h-4 w-4 text-red-500" />
                       </Button>
@@ -353,7 +447,7 @@ export default function SupplierMappingTab() {
                           </Label>
                           <Input
                             id={`code-${supplierId}`}
-                            placeholder="Code"
+                            placeholder="Lettre"
                             value={supplierColumns[supplierId]?.code || ""}
                             onChange={(e) =>
                               updateSupplierColumn(
@@ -363,6 +457,12 @@ export default function SupplierMappingTab() {
                               )
                             }
                             className="w-full"
+                            disabled={
+                              createSupplierColumnMutation.isPending ||
+                              updateSupplierColumnMutation.isPending ||
+                              deleteSupplierColumnMutation.isPending
+                            }
+                            maxLength={1}
                           />
                         </div>
 
@@ -376,7 +476,7 @@ export default function SupplierMappingTab() {
                           </Label>
                           <Input
                             id={`type-${supplierId}`}
-                            placeholder="Type"
+                            placeholder="Lettre"
                             value={supplierColumns[supplierId]?.type || ""}
                             onChange={(e) =>
                               updateSupplierColumn(
@@ -386,6 +486,12 @@ export default function SupplierMappingTab() {
                               )
                             }
                             className="w-full"
+                            disabled={
+                              createSupplierColumnMutation.isPending ||
+                              updateSupplierColumnMutation.isPending ||
+                              deleteSupplierColumnMutation.isPending
+                            }
+                            maxLength={1}
                           />
                         </div>
 
@@ -399,7 +505,7 @@ export default function SupplierMappingTab() {
                           </Label>
                           <Input
                             id={`montant-${supplierId}`}
-                            placeholder="Montant"
+                            placeholder="Lettre"
                             value={supplierColumns[supplierId]?.montant || ""}
                             onChange={(e) =>
                               updateSupplierColumn(
@@ -409,8 +515,25 @@ export default function SupplierMappingTab() {
                               )
                             }
                             className="w-full"
+                            disabled={
+                              createSupplierColumnMutation.isPending ||
+                              updateSupplierColumnMutation.isPending ||
+                              deleteSupplierColumnMutation.isPending
+                            }
+                            maxLength={1}
                           />
                         </div>
+                      </div>
+
+                      {/* Individual Save Button */}
+                      <div className="flex justify-end mt-3">
+                        <Button
+                          onClick={() => saveSupplierColumn(supplierId)}
+                          disabled={isOperating}
+                          size="sm"
+                        >
+                          Sauvegarder
+                        </Button>
                       </div>
                     </div>
                   </div>

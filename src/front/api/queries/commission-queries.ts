@@ -55,6 +55,43 @@ export async function getSupplierCommissionsColumnQuery({
   return response.data;
 }
 
+export const createSupplierCommissionColumnQuery = async (
+  data: Pick<
+    SuppliersCommissionsColumn,
+    "code_column_letter" | "type_column_letter" | "amount_column_letter"
+  > & { supplier: Supplier["id"] },
+) => {
+  const response = await api.post("/api/suppliers-commissions-column", data);
+
+  return response.data;
+};
+
+export const updateSupplierCommissionColumnQuery = async (
+  data: Pick<
+    SuppliersCommissionsColumn,
+    "code_column_letter" | "type_column_letter" | "amount_column_letter"
+  > & {
+    supplier: Supplier["id"];
+    supplierColumnId: SuppliersCommissionsColumn["id"];
+  },
+) => {
+  const response = await api.patch(
+    `/api/suppliers-commissions-column/${data.supplierColumnId}`,
+    data,
+  );
+
+  return response.data;
+};
+
+export async function deleteSupplierCommissionColumnQuery(
+  supplierCommissionColumn: SuppliersCommissionsColumn["id"],
+) {
+  const response = await api.delete(
+    `/api/suppliers-commissions-column/${supplierCommissionColumn}`,
+  );
+  return response.data;
+}
+
 export async function getCommissionsImportQuery({
   queryKey,
 }: {
