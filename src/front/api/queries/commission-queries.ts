@@ -6,7 +6,6 @@ import type {
   CommissionImport,
   SuppliersCommissionsColumn,
 } from "@/front/types/commission";
-import type { Media } from "@/front/types/media";
 import type { PaginatedResponse } from "@/front/types/response";
 import type { Supplier } from "@/front/types/supplier";
 import { api } from "../_config";
@@ -80,10 +79,22 @@ export async function deleteCommissionImportQuery(
   return response.data;
 }
 
-export async function createCommissionImportQuery(params: {
-  supplier: Supplier["id"];
-  file: Media["id"][];
-}) {
-  const response = await api.post("/api/commission-imports", params);
+export const createCommissionImportQuery = async ({
+  file,
+  supplierId,
+}: {
+  file: File;
+  supplierId: Supplier["id"];
+}) => {
+  const formData = new FormData();
+
+  formData.append("file", file);
+  formData.append("supplier", supplierId);
+
+  const response = await api.post(
+    "/api/commission-imports/custom-create",
+    formData,
+  );
+
   return response.data;
-}
+};

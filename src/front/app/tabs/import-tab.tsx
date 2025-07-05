@@ -88,9 +88,8 @@ export default function ImportTab() {
   });
 
   const allSuppliers = suppliers?.docs || [];
-  // Existing imports from API (global returns a single object with files array)
-  const existingGlobalImport = global;
-  const existingFiles = existingGlobalImport?.docs || [];
+  // Existing imports from API (now returns paginated commission imports)
+  const existingImports = global?.docs || [];
 
   // Auto-load existing supplier imports on component mount
   useEffect(() => {
