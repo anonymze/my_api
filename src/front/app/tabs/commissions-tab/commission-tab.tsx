@@ -34,6 +34,7 @@ import {
 } from "@/front/components/ui/table";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
+  BookAlertIcon,
   Calculator,
   Download,
   Edit,
@@ -189,7 +190,7 @@ export default function CommissionsTab() {
       </CardHeader>
       <CardContent className="space-y-4">
         <Alert className="items-center">
-          <Calculator className="h-4 w-4" />
+          <BookAlertIcon className="h-4 w-4" />
           <AlertDescription>
             Les calculs de commissions sont basés sur les données importées et
             les mappings configurés. Assurez-vous que tous les fichiers sont
@@ -232,37 +233,39 @@ export default function CommissionsTab() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Nom et prénom</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Production</TableHead>
-                  <TableHead>Encours</TableHead>
-                  <TableHead className="ml-auto text-right">Actions</TableHead>
+                  <TableHead className="px-5">Email</TableHead>
+                  <TableHead className="px-5">Nom et prénom</TableHead>
+                  <TableHead className="px-5">Role</TableHead>
+                  <TableHead className="px-5">Production</TableHead>
+                  <TableHead className="px-5">Encours</TableHead>
+                  <TableHead className="ml-auto text-right px-5">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredData?.docs.map((commission) => (
                   <TableRow key={commission.id}>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium px-5">
                       {commission.app_user.email}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-5">
                       {commission.app_user.lastname}{" "}
                       {commission.app_user.firstname}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-5">
                       <Badge variant="outline">
                         {commission.app_user.role}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-5">
                       {commission.informations?.production ? (
                         <Badge variant="secondary">
                           {commission.informations?.production}
                         </Badge>
                       ) : null}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-5">
                       {commission.informations?.encours ? (
                         <Badge variant="secondary">
                           {commission.informations?.encours}
@@ -270,7 +273,7 @@ export default function CommissionsTab() {
                       ) : null}
                     </TableCell>
 
-                    <TableCell className="text-right">
+                    <TableCell className="text-right px-5">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0">
