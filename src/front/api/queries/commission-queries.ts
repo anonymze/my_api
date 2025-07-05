@@ -38,7 +38,7 @@ export async function getAppUserCommissionsCodeQuery({
   return response.data;
 }
 
-export async function getSupplierCommissionsColumnCodeQuery({
+export async function getSupplierCommissionsColumnQuery({
   queryKey,
 }: {
   queryKey: QueryKey;
@@ -46,7 +46,7 @@ export async function getSupplierCommissionsColumnCodeQuery({
   const [, filters] = queryKey;
 
   const response = await api.get<PaginatedResponse<SuppliersCommissionsColumn>>(
-    "/api/supplier-commissions-column",
+    "/api/suppliers-commissions-column",
     { params: filters },
   );
 

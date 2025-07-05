@@ -7,7 +7,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/front/components/ui/tabs";
-import { Building2, Calculator, LogOutIcon, Upload, Users } from "lucide-react";
+import { Calculator, CodeIcon, LogOutIcon, Upload } from "lucide-react";
 import React, { Suspense, useEffect } from "react";
 
 import "@/front/styles/global.css";
@@ -119,12 +119,12 @@ export default function CommissionPage() {
               Importer les fichiers
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Codes Utilisateur
+              <CodeIcon className="w-4 h-4" />
+              Codes utilisateur
             </TabsTrigger>
             <TabsTrigger value="suppliers" className="flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
-              Mapping Fournisseur
+              <CodeIcon className="w-4 h-4" />
+              Mapping fournisseur
             </TabsTrigger>
           </TabsList>
 

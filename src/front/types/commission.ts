@@ -1,6 +1,6 @@
 import type { Media } from "./media";
 import type { Supplier } from "./supplier";
-import type { AppUser } from "./user";
+import type { AppUser, User } from "./user";
 
 export interface Commission {
   id: string;
@@ -22,7 +22,7 @@ export interface Commission {
 
 export interface AppUsersCommissionsCode {
   id: string;
-  app_user: AppUser;
+  app_user: User;
   code: {
     code: string;
     id?: string | null;

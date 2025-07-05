@@ -23,13 +23,13 @@ import {
 } from "@/front/components/ui/popover";
 import {
   BookAlertIcon,
-  Calculator,
   ChevronsUpDown,
+  FileIcon,
   Search,
   Upload,
   X,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const allowedTypes = [
   "text/csv",
@@ -45,14 +45,15 @@ export default function ImportTab() {
   );
   const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
-  
+
   // Get initial search term from URL
   const getInitialSearchTerm = () => {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('supplierSearch') || '';
+    return urlParams.get("supplierSearch") || "";
   };
-  
-  const [searchSelectedSuppliers, setSearchSelectedSuppliers] = useState(getInitialSearchTerm);
+
+  const [searchSelectedSuppliers, setSearchSelectedSuppliers] =
+    useState(getInitialSearchTerm);
 
   // Expanded suppliers list - replace with actual data from your API
   const suppliers = [
@@ -118,11 +119,11 @@ export default function ImportTab() {
     setSearchSelectedSuppliers(value);
     const url = new URL(window.location.href);
     if (value) {
-      url.searchParams.set('supplierSearch', value);
+      url.searchParams.set("supplierSearch", value);
     } else {
-      url.searchParams.delete('supplierSearch');
+      url.searchParams.delete("supplierSearch");
     }
-    window.history.replaceState({}, '', url.toString());
+    window.history.replaceState({}, "", url.toString());
   };
 
   // Update search term if URL changes (e.g., back button)
@@ -131,8 +132,8 @@ export default function ImportTab() {
       setSearchSelectedSuppliers(getInitialSearchTerm());
     };
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
   // Filter selected suppliers based on search
@@ -183,7 +184,7 @@ export default function ImportTab() {
         <div className="flex items-center justify-between gap-2">
           <div className="flex flex-col gap-2">
             <CardTitle className="flex items-center gap-2">
-              <Calculator className="w-5 h-5" />
+              <FileIcon className="w-5 h-5" />
               Importation des fichiers globaux de commissions
             </CardTitle>
             <CardDescription>
@@ -270,7 +271,6 @@ export default function ImportTab() {
             <div className="space-y-4">
               {getFilteredSelectedSuppliers().map((supplierId) => {
                 const supplier = suppliers.find((s) => s.id === supplierId);
-                const fileCount = supplierFiles[supplierId]?.length || 0;
                 return (
                   <div
                     key={supplierId}
@@ -324,7 +324,7 @@ export default function ImportTab() {
                     </div>
 
                     {/* File List */}
-                    {supplierFiles[supplierId]?.length > 0 && (
+                    {(supplierFiles?.[supplierId]?.length ?? 0) > 0 && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-600">
@@ -332,7 +332,7 @@ export default function ImportTab() {
                           </span>
                         </div>
                         <div className="space-y-1">
-                          {supplierFiles[supplierId].map((file, index) => (
+                          {supplierFiles[supplierId]!.map((file, index) => (
                             <div
                               key={index}
                               className="flex items-center justify-between p-2 bg-white rounded text-sm"

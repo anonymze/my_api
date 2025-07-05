@@ -113,20 +113,11 @@ export default function CommissionsTab() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  const {
-    isPending,
-    isError,
-    error,
-    data,
-    isLoading,
-    isFetching,
-    isPlaceholderData,
-  } = useQuery({
+  const { error, data, isLoading, isFetching } = useQuery({
     queryKey: [
       "commissions",
       {
         page: currentPage,
-        depht: 2,
       },
     ],
     queryFn: getCommissionsQuery,
@@ -172,7 +163,7 @@ export default function CommissionsTab() {
     );
   }
 
-  if (!data || !data.docs) {
+  if (!data || !data.docs.length) {
     return (
       <Card>
         <CardContent className="p-6 flex items-center justify-center">

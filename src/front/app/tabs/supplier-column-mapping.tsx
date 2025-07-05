@@ -1,4 +1,5 @@
-import { Alert, AlertDescription } from "@/front/components/ui/alert";
+import { getSupplierCommissionsColumnQuery } from "@/front/api/queries/commission-queries";
+import { getSuppliersQuery } from "@/front/api/queries/supplier-queries";
 import { Button } from "@/front/components/ui/button";
 import {
   Card,
@@ -21,70 +22,114 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/front/components/ui/popover";
-import {
-  BookAlertIcon,
-  Calculator,
-  ChevronsUpDown,
-  Search,
-  Upload,
-  X,
-} from "lucide-react";
+import type { Supplier } from "@/front/types/supplier";
+import { useQuery } from "@tanstack/react-query";
+import { ChevronsUpDown, Code, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
-
-const allowedTypes = [
-  "text/csv",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-];
-const allowedExtensions = [".csv", ".xls", ".xlsx"];
+import { TabSkeleton } from "../home";
 
 export default function SupplierMappingTab() {
-  const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
-  const [supplierFiles, setSupplierFiles] = useState<Record<string, File[]>>(
-    {},
+  const [selectedSuppliers, setSelectedSuppliers] = useState<Supplier["id"][]>(
+    [],
   );
-  const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
+  const [supplierColumns, setSupplierColumns] = useState<
+    Record<
+      Supplier["id"],
+      {
+        code: string;
+        type: string;
+        montant: string;
+      }
+    >
+  >({});
   const [open, setOpen] = useState(false);
+
+  const {
+    error: errorSuppliers,
+    data: suppliers,
+    isLoading: loadingSuppliers,
+  } = useQuery({
+    queryKey: [
+      "suppliers",
+      {
+        limit: 0,
+      },
+    ],
+    queryFn: getSuppliersQuery,
+  });
+
+  const {
+    error: errorSuppliersColumns,
+    data: suppliersColumn,
+    isLoading: loadingSuppliersColumn,
+  } = useQuery({
+    queryKey: [
+      "suppliers-column",
+      {
+        limit: 0,
+      },
+    ],
+    queryFn: getSupplierCommissionsColumnQuery,
+  });
 
   // Get initial search term from URL
   const getInitialSearchTerm = () => {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get("supplierSearch") || "";
+    return urlParams.get("supplierColumnSearch") || "";
   };
 
   const [searchSelectedSuppliers, setSearchSelectedSuppliers] =
     useState(getInitialSearchTerm);
 
-  // Expanded suppliers list - replace with actual data from your API
-  const suppliers = [
-    { id: "supplier1", name: "Fournisseur A" },
-    { id: "supplier2", name: "Fournisseur B" },
-    { id: "supplier3", name: "Fournisseur C" },
-    { id: "supplier3s", name: "Fournisseur Cs" },
-    { id: "supplier3ss", name: "Fournisseur Css" },
-    // Add more suppliers as needed...
-  ];
+  // Suppliers list from API
+  const allSuppliers = suppliers?.docs || [];
+  // Existing supplier columns from API
+  const existingSupplierColumns = suppliersColumn?.docs || [];
 
-  const validateFile = (file: File): string | null => {
-    const hasValidType = allowedTypes.includes(file.type);
-    const hasValidExtension = allowedExtensions.some((ext) =>
-      file.name.toLowerCase().endsWith(ext),
-    );
+  // Auto-load existing supplier mappings on component mount
+  useEffect(() => {
+    if (existingSupplierColumns.length > 0) {
+      const existingIds = existingSupplierColumns
+        .map((mapping) => mapping.supplier?.id)
+        .filter(Boolean);
 
-    if (!hasValidType && !hasValidExtension) {
-      return "Le fichier doit être au format CSV, XLS ou XLSX";
+      setSelectedSuppliers((prev) => {
+        const newIds = existingIds.filter((id) => !prev.includes(id));
+        return [...prev, ...newIds];
+      });
+
+      const existingData: {
+        [key: Supplier["id"]]: {
+          code: string;
+          type: string;
+          montant: string;
+        };
+      } = {};
+      existingSupplierColumns.forEach((mapping) => {
+        if (mapping.supplier?.id) {
+          existingData[mapping.supplier.id] = {
+            code: mapping.code_column_letter || "",
+            type: mapping.type_column_letter || "",
+            montant: mapping.amount_column_letter || "",
+          };
+        }
+      });
+
+      setSupplierColumns((prev) => ({ ...prev, ...existingData }));
     }
-
-    return null;
-  };
+  }, [existingSupplierColumns]);
 
   const handleSupplierAdd = (supplierId: string) => {
     if (!selectedSuppliers.includes(supplierId)) {
-      setSelectedSuppliers((prev) => [...prev, supplierId]);
-      // Initialize empty files array for this supplier
-      setSupplierFiles((prev) => ({
+      setSelectedSuppliers((prev) => [supplierId, ...prev]);
+      // Initialize empty columns object for this supplier
+      setSupplierColumns((prev) => ({
         ...prev,
-        [supplierId]: [],
+        [supplierId]: {
+          code: "",
+          type: "",
+          montant: "",
+        },
       }));
     }
     setOpen(false);
@@ -93,23 +138,17 @@ export default function SupplierMappingTab() {
   const removeSupplier = (supplierId: string) => {
     // Remove supplier from selected list
     setSelectedSuppliers((prev) => prev.filter((id) => id !== supplierId));
-    // Remove all files for this supplier
-    setSupplierFiles((prev) => {
-      const newFiles = { ...prev };
-      delete newFiles[supplierId];
-      return newFiles;
-    });
-    // Remove any errors for this supplier
-    setFileErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors[supplierId];
-      return newErrors;
+    // Remove columns for this supplier
+    setSupplierColumns((prev) => {
+      const newColumns = { ...prev };
+      delete newColumns[supplierId];
+      return newColumns;
     });
   };
 
   // Get available suppliers (not yet selected)
   const getAvailableSuppliers = () => {
-    return suppliers.filter(
+    return allSuppliers.filter(
       (supplier) => !selectedSuppliers.includes(supplier.id),
     );
   };
@@ -119,9 +158,9 @@ export default function SupplierMappingTab() {
     setSearchSelectedSuppliers(value);
     const url = new URL(window.location.href);
     if (value) {
-      url.searchParams.set("supplierSearch", value);
+      url.searchParams.set("supplierColumnSearch", value);
     } else {
-      url.searchParams.delete("supplierSearch");
+      url.searchParams.delete("supplierColumnSearch");
     }
     window.history.replaceState({}, "", url.toString());
   };
@@ -141,42 +180,54 @@ export default function SupplierMappingTab() {
     if (!searchSelectedSuppliers) return selectedSuppliers;
 
     return selectedSuppliers.filter((supplierId) => {
-      const supplier = suppliers.find((s) => s.id === supplierId);
-      return supplier?.name
-        .toLowerCase()
-        .includes(searchSelectedSuppliers.toLowerCase());
+      const supplier = allSuppliers.find((s) => s.id === supplierId);
+      const name = supplier?.name || "";
+
+      return name.toLowerCase().includes(searchSelectedSuppliers.toLowerCase());
     });
   };
 
-  const handleFileUpload = (supplierId: string, file: File | null) => {
-    if (file) {
-      const error = validateFile(file);
-      if (error) {
-        setFileErrors((prev) => ({ ...prev, [supplierId]: error }));
-        return;
-      } else {
-        setFileErrors((prev) => {
-          const newErrors = { ...prev };
-          delete newErrors[supplierId];
-          return newErrors;
-        });
-      }
-
-      // Add file to existing files array
-      setSupplierFiles((prev) => ({
-        ...prev,
-        [supplierId]: [...(prev[supplierId] || []), file],
-      }));
-    }
-  };
-
-  const handleRemoveFile = (supplierId: string, fileIndex: number) => {
-    setSupplierFiles((prev) => ({
+  const updateSupplierColumn = (
+    supplierId: Supplier["id"],
+    field: "code" | "type" | "montant",
+    value: string,
+  ) => {
+    setSupplierColumns((prev) => ({
       ...prev,
-      [supplierId]:
-        prev[supplierId]?.filter((_, index) => index !== fileIndex) || [],
+      [supplierId]: {
+        ...(prev[supplierId] || { code: "", type: "", montant: "" }),
+        [field]: value,
+      },
     }));
   };
+
+  if (loadingSuppliersColumn || loadingSuppliers) {
+    return <TabSkeleton />;
+  }
+
+  if (errorSuppliers || errorSuppliersColumns) {
+    return (
+      <Card>
+        <CardContent className="p-6 flex items-center justify-center">
+          <p className="text-red-600">
+            Erreur lors du chargement des fournisseurs
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!suppliers || !suppliers.docs.length) {
+    return (
+      <Card>
+        <CardContent className="p-6 flex items-center justify-center">
+          <p className="text-gray-600">
+            Il n'y a pas de fournisseurs disponibles
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -184,25 +235,19 @@ export default function SupplierMappingTab() {
         <div className="flex items-center justify-between gap-2">
           <div className="flex flex-col gap-2">
             <CardTitle className="flex items-center gap-2">
-              <Calculator className="w-5 h-5" />
-              Importation des fichiers globaux de commissions
+              <Code className="w-5 h-5" />
+              Mapping des colonnes des fournisseurs
             </CardTitle>
             <CardDescription>
-              Ajoutez, modifiez ou supprimez les fichiers globaux de commissions
-              des fournisseurs
+              Associez un fournisseur à des noms de colonnes Excel spécifiques.
             </CardDescription>
           </div>
+          <Button onClick={() => console.log("Create commission")}>
+            Sauvegarder
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        <Alert className="items-center">
-          <BookAlertIcon className="h-4 w-4" />
-          <AlertDescription>
-            Les commissions seront basées sur les derniers fichiers globaux de
-            commissions importés ici.
-          </AlertDescription>
-        </Alert>
-
         {/* Supplier Selection */}
 
         <div className="space-y-2.5">
@@ -224,22 +269,24 @@ export default function SupplierMappingTab() {
                 <CommandInput placeholder="Rechercher un fournisseur..." />
                 <CommandEmpty>Aucun fournisseur disponible</CommandEmpty>
                 <CommandGroup className="max-h-[230px] overflow-auto">
-                  {getAvailableSuppliers().map((supplier) => (
-                    <CommandItem
-                      key={supplier.id}
-                      value={supplier.name}
-                      onSelect={() => handleSupplierAdd(supplier.id)}
-                    >
-                      {supplier.name}
-                    </CommandItem>
-                  ))}
+                  {getAvailableSuppliers().map((supplier) => {
+                    return (
+                      <CommandItem
+                        key={supplier.id}
+                        value={supplier.name}
+                        onSelect={() => handleSupplierAdd(supplier.id)}
+                      >
+                        <span className="font-medium">{supplier.name}</span>
+                      </CommandItem>
+                    );
+                  })}
                 </CommandGroup>
               </Command>
             </PopoverContent>
           </Popover>
         </div>
 
-        {/* Selected Suppliers with File Upload */}
+        {/* Suppliers with Column Mapping */}
         {selectedSuppliers.length > 0 && (
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
@@ -270,8 +317,7 @@ export default function SupplierMappingTab() {
             </div>
             <div className="space-y-4">
               {getFilteredSelectedSuppliers().map((supplierId) => {
-                const supplier = suppliers.find((s) => s.id === supplierId);
-                const fileCount = supplierFiles[supplierId]?.length || 0;
+                const supplier = allSuppliers.find((s) => s.id === supplierId);
                 return (
                   <div
                     key={supplierId}
@@ -279,7 +325,7 @@ export default function SupplierMappingTab() {
                   >
                     {/* Supplier Header */}
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-col space-y-1">
                         <span className="text-sm font-medium">
                           {supplier?.name}
                         </span>
@@ -294,71 +340,79 @@ export default function SupplierMappingTab() {
                       </Button>
                     </div>
 
-                    {/* File Upload */}
+                    {/* Columns Input */}
                     <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Label
-                          htmlFor={`file-${supplierId}`}
-                          className="text-sm text-gray-700"
-                        >
-                          Importer le fichier :
-                        </Label>
-                        <Input
-                          id={`file-${supplierId}`}
-                          type="file"
-                          accept=".csv,.xlsx,.xls"
-                          className="flex-1"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0] || null;
-                            handleFileUpload(supplierId, file);
-                            // Reset input to allow same file upload again
-                            e.target.value = "";
-                          }}
-                        />
-                      </div>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        {/* Code Column */}
+                        <div className="flex-1 space-y-1">
+                          <Label
+                            htmlFor={`code-${supplierId}`}
+                            className="text-xs text-gray-700"
+                          >
+                            Colonne "Code unique"
+                          </Label>
+                          <Input
+                            id={`code-${supplierId}`}
+                            placeholder="Code"
+                            value={supplierColumns[supplierId]?.code || ""}
+                            onChange={(e) =>
+                              updateSupplierColumn(
+                                supplierId,
+                                "code",
+                                e.target.value,
+                              )
+                            }
+                            className="w-full"
+                          />
+                        </div>
 
-                      {fileErrors[supplierId] && (
-                        <p className="text-red-500 text-sm">
-                          {fileErrors[supplierId]}
-                        </p>
-                      )}
+                        {/* Type Column */}
+                        <div className="flex-1 space-y-1">
+                          <Label
+                            htmlFor={`type-${supplierId}`}
+                            className="text-xs text-gray-700"
+                          >
+                            Colonne "Type commission"
+                          </Label>
+                          <Input
+                            id={`type-${supplierId}`}
+                            placeholder="Type"
+                            value={supplierColumns[supplierId]?.type || ""}
+                            onChange={(e) =>
+                              updateSupplierColumn(
+                                supplierId,
+                                "type",
+                                e.target.value,
+                              )
+                            }
+                            className="w-full"
+                          />
+                        </div>
+
+                        {/* Montant Column */}
+                        <div className="flex-1 space-y-1">
+                          <Label
+                            htmlFor={`montant-${supplierId}`}
+                            className="text-xs text-gray-700"
+                          >
+                            Colonne "Montant commission"
+                          </Label>
+                          <Input
+                            id={`montant-${supplierId}`}
+                            placeholder="Montant"
+                            value={supplierColumns[supplierId]?.montant || ""}
+                            onChange={(e) =>
+                              updateSupplierColumn(
+                                supplierId,
+                                "montant",
+                                e.target.value,
+                              )
+                            }
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
                     </div>
-
-                    {/* File List */}
-                    {supplierFiles[supplierId]?.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-600">
-                            Fichier :
-                          </span>
-                        </div>
-                        <div className="space-y-1">
-                          {supplierFiles[supplierId].map((file, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center justify-between p-2 bg-white rounded text-sm"
-                            >
-                              <div className="flex items-center space-x-2">
-                                <Upload className="h-4 w-4 text-green-600" />
-                                <span className="text-gray-700">
-                                  {file.name}
-                                </span>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  handleRemoveFile(supplierId, index)
-                                }
-                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 );
               })}

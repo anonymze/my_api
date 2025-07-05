@@ -19,9 +19,9 @@ const server = Bun.serve({
     // Echo console logs from the browser to the server
     console: true,
   },
-  tls: {
-    cert: Bun.file("certificates/localhost.pem"),
-    key: Bun.file("certificates/localhost-key.pem"),
-  },
+  // tls: {
+  //   cert: Bun.file("certificates/localhost.pem"),
+  //   key: Bun.file("certificates/localhost-key.pem"),
+  // },
 });
 console.log(`Listening on http://localhost:${server.port} ...`);

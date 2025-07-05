@@ -1,4 +1,5 @@
-import { Alert, AlertDescription } from "@/front/components/ui/alert";
+import { getAppUsersQuery } from "@/front/api/queries/app-user-queries";
+import { getAppUserCommissionsCodeQuery } from "@/front/api/queries/commission-queries";
 import { Button } from "@/front/components/ui/button";
 import {
   Card,
@@ -21,107 +22,118 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/front/components/ui/popover";
-import {
-  BookAlertIcon,
-  Calculator,
-  ChevronsUpDown,
-  Search,
-  Upload,
-  X,
-} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ChevronsUpDown, CodeIcon, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
-
-const allowedTypes = [
-  "text/csv",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-];
-const allowedExtensions = [".csv", ".xls", ".xlsx"];
+import { TabSkeleton } from "../home";
 
 export default function UsersCodeTab() {
-  const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
-  const [supplierFiles, setSupplierFiles] = useState<Record<string, File[]>>(
-    {},
-  );
-  const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [userCodes, setUserCodes] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
+
+  const {
+    error: errorCodeUsers,
+    data: codeUsers,
+    isLoading: loadingCodeUsers,
+  } = useQuery({
+    queryKey: [
+      "commissions-code",
+      {
+        limit: 0,
+      },
+    ],
+    queryFn: getAppUserCommissionsCodeQuery,
+  });
+
+  const {
+    error: errorUsers,
+    data: users,
+    isLoading: loadingUsers,
+  } = useQuery({
+    queryKey: [
+      "users",
+      {
+        limit: 0,
+      },
+    ],
+    queryFn: getAppUsersQuery,
+  });
 
   // Get initial search term from URL
   const getInitialSearchTerm = () => {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get("supplierSearch") || "";
+    return urlParams.get("userSearch") || "";
   };
 
-  const [searchSelectedSuppliers, setSearchSelectedSuppliers] =
+  const [searchSelectedUsers, setSearchSelectedUsers] =
     useState(getInitialSearchTerm);
 
-  // Expanded suppliers list - replace with actual data from your API
-  const suppliers = [
-    { id: "supplier1", name: "Fournisseur A" },
-    { id: "supplier2", name: "Fournisseur B" },
-    { id: "supplier3", name: "Fournisseur C" },
-    { id: "supplier3s", name: "Fournisseur Cs" },
-    { id: "supplier3ss", name: "Fournisseur Css" },
-    // Add more suppliers as needed...
-  ];
+  // Users list from API
+  const allUsers = users?.docs || [];
+  // Existing code users from API
+  const existingCodeUsers = codeUsers?.docs || [];
 
-  const validateFile = (file: File): string | null => {
-    const hasValidType = allowedTypes.includes(file.type);
-    const hasValidExtension = allowedExtensions.some((ext) =>
-      file.name.toLowerCase().endsWith(ext),
-    );
+  // Auto-load existing user mappings on component mount
+  useEffect(() => {
+    if (existingCodeUsers.length > 0) {
+      const existingIds = existingCodeUsers
+        .map((mapping) => mapping.app_user?.id)
+        .filter(Boolean);
 
-    if (!hasValidType && !hasValidExtension) {
-      return "Le fichier doit être au format CSV, XLS ou XLSX";
+      setSelectedUsers((prev) => {
+        const newIds = existingIds.filter((id) => !prev.includes(id));
+        return [...prev, ...newIds];
+      });
+
+      const existingData: Record<string, string> = {};
+      existingCodeUsers.forEach((mapping) => {
+        if (mapping.app_user?.id) {
+          const codes = mapping.code.map(c => c.code).join(", ");
+          existingData[mapping.app_user.id] = codes;
+        }
+      });
+
+      setUserCodes((prev) => ({ ...prev, ...existingData }));
     }
+  }, [existingCodeUsers]);
 
-    return null;
-  };
-
-  const handleSupplierAdd = (supplierId: string) => {
-    if (!selectedSuppliers.includes(supplierId)) {
-      setSelectedSuppliers((prev) => [...prev, supplierId]);
-      // Initialize empty files array for this supplier
-      setSupplierFiles((prev) => ({
+  const handleUserAdd = (userId: string) => {
+    if (!selectedUsers.includes(userId)) {
+      setSelectedUsers((prev) => [userId, ...prev]);
+      // Initialize empty codes string for this user
+      setUserCodes((prev) => ({
         ...prev,
-        [supplierId]: [],
+        [userId]: "",
       }));
     }
     setOpen(false);
   };
 
-  const removeSupplier = (supplierId: string) => {
-    // Remove supplier from selected list
-    setSelectedSuppliers((prev) => prev.filter((id) => id !== supplierId));
-    // Remove all files for this supplier
-    setSupplierFiles((prev) => {
-      const newFiles = { ...prev };
-      delete newFiles[supplierId];
-      return newFiles;
-    });
-    // Remove any errors for this supplier
-    setFileErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors[supplierId];
-      return newErrors;
+  const removeUser = (userId: string) => {
+    // Remove user from selected list
+    setSelectedUsers((prev) => prev.filter((id) => id !== userId));
+    // Remove codes for this user
+    setUserCodes((prev) => {
+      const newCodes = { ...prev };
+      delete newCodes[userId];
+      return newCodes;
     });
   };
 
-  // Get available suppliers (not yet selected)
-  const getAvailableSuppliers = () => {
-    return suppliers.filter(
-      (supplier) => !selectedSuppliers.includes(supplier.id),
-    );
+  // Get available users (not yet selected)
+  const getAvailableUsers = () => {
+    return allUsers.filter((user) => !selectedUsers.includes(user.id));
   };
 
   // Update URL when search term changes
   const handleSearchChange = (value: string) => {
-    setSearchSelectedSuppliers(value);
+    setSearchSelectedUsers(value);
     const url = new URL(window.location.href);
     if (value) {
-      url.searchParams.set("supplierSearch", value);
+      url.searchParams.set("userSearch", value);
     } else {
-      url.searchParams.delete("supplierSearch");
+      url.searchParams.delete("userSearch");
     }
     window.history.replaceState({}, "", url.toString());
   };
@@ -129,54 +141,57 @@ export default function UsersCodeTab() {
   // Update search term if URL changes (e.g., back button)
   useEffect(() => {
     const handlePopState = () => {
-      setSearchSelectedSuppliers(getInitialSearchTerm());
+      setSearchSelectedUsers(getInitialSearchTerm());
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  // Filter selected suppliers based on search
-  const getFilteredSelectedSuppliers = () => {
-    if (!searchSelectedSuppliers) return selectedSuppliers;
+  // Filter selected users based on search
+  const getFilteredSelectedUsers = () => {
+    if (!searchSelectedUsers) return selectedUsers;
 
-    return selectedSuppliers.filter((supplierId) => {
-      const supplier = suppliers.find((s) => s.id === supplierId);
-      return supplier?.name
-        .toLowerCase()
-        .includes(searchSelectedSuppliers.toLowerCase());
+    return selectedUsers.filter((userId) => {
+      const user = allUsers.find((u) => u.id === userId);
+      const fullName =
+        `${user?.firstname || ""} ${user?.lastname || ""}`.trim();
+      const email = user?.email || "";
+
+      return (
+        fullName.toLowerCase().includes(searchSelectedUsers.toLowerCase()) ||
+        email.toLowerCase().includes(searchSelectedUsers.toLowerCase())
+      );
     });
   };
 
-  const handleFileUpload = (supplierId: string, file: File | null) => {
-    if (file) {
-      const error = validateFile(file);
-      if (error) {
-        setFileErrors((prev) => ({ ...prev, [supplierId]: error }));
-        return;
-      } else {
-        setFileErrors((prev) => {
-          const newErrors = { ...prev };
-          delete newErrors[supplierId];
-          return newErrors;
-        });
-      }
+  if (loadingCodeUsers || loadingUsers) {
+    return <TabSkeleton />;
+  }
 
-      // Add file to existing files array
-      setSupplierFiles((prev) => ({
-        ...prev,
-        [supplierId]: [...(prev[supplierId] || []), file],
-      }));
-    }
-  };
+  if (errorCodeUsers || errorUsers) {
+    return (
+      <Card>
+        <CardContent className="p-6 flex items-center justify-center">
+          <p className="text-red-600">
+            Erreur lors du chargement des utilisateurs
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
-  const handleRemoveFile = (supplierId: string, fileIndex: number) => {
-    setSupplierFiles((prev) => ({
-      ...prev,
-      [supplierId]:
-        prev[supplierId]?.filter((_, index) => index !== fileIndex) || [],
-    }));
-  };
+  if (!users || !users.docs.length) {
+    return (
+      <Card>
+        <CardContent className="p-6 flex items-center justify-center">
+          <p className="text-gray-600">
+            Il n'y a pas de d'utilisateurs disponibles
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -184,29 +199,22 @@ export default function UsersCodeTab() {
         <div className="flex items-center justify-between gap-2">
           <div className="flex flex-col gap-2">
             <CardTitle className="flex items-center gap-2">
-              <Calculator className="w-5 h-5" />
-              Importation des fichiers globaux de commissions
+              <CodeIcon className="w-5 h-5" />
+              Mapping des codes utilisateurs
             </CardTitle>
             <CardDescription>
-              Ajoutez, modifiez ou supprimez les fichiers globaux de commissions
-              des fournisseurs
+              Associez un utilisateur à des codes uniques de commission.
             </CardDescription>
           </div>
+          <Button onClick={() => console.log("Create commission")}>
+            Sauvegarder
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        <Alert className="items-center">
-          <BookAlertIcon className="h-4 w-4" />
-          <AlertDescription>
-            Les commissions seront basées sur les derniers fichiers globaux de
-            commissions importés ici.
-          </AlertDescription>
-        </Alert>
-
-        {/* Supplier Selection */}
-
+        {/* User Selection */}
         <div className="space-y-2.5">
-          <Label htmlFor="supplier-select">Ajouter un fournisseur</Label>
+          <Label htmlFor="user-select">Ajouter un utilisateur</Label>
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -215,47 +223,57 @@ export default function UsersCodeTab() {
                 aria-expanded={open}
                 className="w-full justify-between"
               >
-                Choisir un fournisseur...
+                Choisir un utilisateur...
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[250px] p-0">
               <Command>
-                <CommandInput placeholder="Rechercher un fournisseur..." />
-                <CommandEmpty>Aucun fournisseur disponible</CommandEmpty>
+                <CommandInput placeholder="Rechercher un utilisateur..." />
+                <CommandEmpty>Aucun utilisateur disponible</CommandEmpty>
                 <CommandGroup className="max-h-[230px] overflow-auto">
-                  {getAvailableSuppliers().map((supplier) => (
-                    <CommandItem
-                      key={supplier.id}
-                      value={supplier.name}
-                      onSelect={() => handleSupplierAdd(supplier.id)}
-                    >
-                      {supplier.name}
-                    </CommandItem>
-                  ))}
+                  {getAvailableUsers().map((user) => {
+                    const fullName =
+                      `${user.firstname || ""} ${user.lastname || ""}`.trim();
+                    const displayName = fullName || user.email;
+                    return (
+                      <CommandItem
+                        key={user.id}
+                        value={`${fullName} ${user.email}`}
+                        onSelect={() => handleUserAdd(user.id)}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">{displayName}</span>
+                          {fullName && (
+                            <span className="text-xs text-gray-500">
+                              {user.email}
+                            </span>
+                          )}
+                        </div>
+                      </CommandItem>
+                    );
+                  })}
                 </CommandGroup>
               </Command>
             </PopoverContent>
           </Popover>
         </div>
 
-        {/* Selected Suppliers with File Upload */}
-        {selectedSuppliers.length > 0 && (
+        {/* Selected Users with Code Input */}
+        {selectedUsers.length > 0 && (
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <Label>
-                Fournisseurs sélectionnés ({selectedSuppliers.length})
-              </Label>
+              <Label>Utilisateurs sélectionnés ({selectedUsers.length})</Label>
               <div className="flex items-center space-x-2 max-w-sm">
                 <Search className="w-4 h-4 text-muted-foreground" />
                 <div className="relative">
                   <Input
                     placeholder="Rechercher..."
-                    value={searchSelectedSuppliers}
+                    value={searchSelectedUsers}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     className="h-8 pr-8"
                   />
-                  {searchSelectedSuppliers && (
+                  {searchSelectedUsers && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -269,96 +287,65 @@ export default function UsersCodeTab() {
               </div>
             </div>
             <div className="space-y-4">
-              {getFilteredSelectedSuppliers().map((supplierId) => {
-                const supplier = suppliers.find((s) => s.id === supplierId);
-                const fileCount = supplierFiles[supplierId]?.length || 0;
+              {getFilteredSelectedUsers().map((userId) => {
+                const user = allUsers.find((u) => u.id === userId);
+                const fullName =
+                  `${user?.firstname || ""} ${user?.lastname || ""}`.trim();
+                const displayName = fullName || user?.email;
                 return (
                   <div
-                    key={supplierId}
+                    key={userId}
                     className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3"
                   >
-                    {/* Supplier Header */}
+                    {/* User Header */}
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-col space-y-1">
                         <span className="text-sm font-medium">
-                          {supplier?.name}
+                          {displayName}
                         </span>
+                        {fullName && (
+                          <span className="text-xs text-gray-600">
+                            {user?.email}
+                          </span>
+                        )}
                       </div>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => removeSupplier(supplierId)}
+                        onClick={() => removeUser(userId)}
                         className="h-8 w-8 p-0 border-red-200 hover:bg-red-50"
                       >
                         <X className="h-4 w-4 text-red-500" />
                       </Button>
                     </div>
 
-                    {/* File Upload */}
+                    {/* Codes Input */}
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
                         <Label
-                          htmlFor={`file-${supplierId}`}
+                          htmlFor={`codes-${userId}`}
                           className="text-sm text-gray-700"
                         >
-                          Importer le fichier :
+                          Codes de commission :
                         </Label>
-                        <Input
-                          id={`file-${supplierId}`}
-                          type="file"
-                          accept=".csv,.xlsx,.xls"
-                          className="flex-1"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0] || null;
-                            handleFileUpload(supplierId, file);
-                            // Reset input to allow same file upload again
-                            e.target.value = "";
-                          }}
-                        />
                       </div>
-
-                      {fileErrors[supplierId] && (
-                        <p className="text-red-500 text-sm">
-                          {fileErrors[supplierId]}
-                        </p>
-                      )}
+                      <Input
+                        id={`codes-${userId}`}
+                        placeholder="Entrez les codes séparés par des virgules (ex: CODE1, CODE2, CODE3)"
+                        value={userCodes[userId] || ""}
+                        onChange={(e) =>
+                          setUserCodes((prev) => ({
+                            ...prev,
+                            [userId]: e.target.value,
+                          }))
+                        }
+                        className="w-full"
+                      />
+                      <p className="text-xs text-gray-500">
+                        Séparez chaque code par une virgule (,) pour ajouter
+                        plusieurs codes
+                      </p>
                     </div>
-
-                    {/* File List */}
-                    {supplierFiles[supplierId]?.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-600">
-                            Fichier :
-                          </span>
-                        </div>
-                        <div className="space-y-1">
-                          {supplierFiles[supplierId].map((file, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center justify-between p-2 bg-white rounded text-sm"
-                            >
-                              <div className="flex items-center space-x-2">
-                                <Upload className="h-4 w-4 text-green-600" />
-                                <span className="text-gray-700">
-                                  {file.name}
-                                </span>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  handleRemoveFile(supplierId, index)
-                                }
-                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 );
               })}

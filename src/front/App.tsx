@@ -9,8 +9,6 @@ import { AuthContext, AuthProvider } from "./context/auth-context";
 function AppContent() {
   const { isAuthenticated, isLoading } = React.use(AuthContext);
 
-  console.log(isAuthenticated);
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
