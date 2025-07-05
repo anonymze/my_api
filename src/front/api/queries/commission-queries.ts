@@ -3,6 +3,7 @@ import type { QueryKey } from "@tanstack/react-query";
 import type {
   AppUsersCommissionsCode,
   Commission,
+  GlobalCommissionsImport,
   SuppliersCommissionsColumn,
 } from "@/front/types/commission";
 import type { PaginatedResponse } from "@/front/types/response";
@@ -60,9 +61,12 @@ export async function getGlobalCommissionsImportQuery({
 }) {
   const [, filters] = queryKey;
 
-  const response = await api.get<any>("/api/globals/commission-imports", {
-    params: filters,
-  });
+  const response = await api.get<GlobalCommissionsImport>(
+    "/api/globals/commission-imports",
+    {
+      params: filters,
+    },
+  );
 
   return response.data;
 }

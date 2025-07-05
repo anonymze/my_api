@@ -40,3 +40,11 @@ export interface SuppliersCommissionsColumn {
   updatedAt: string;
   createdAt: string;
 }
+
+export interface GlobalCommissionsImport {
+  id: string;
+  files: Array<{ id: string; supplier: Supplier; file: Media }>;
+  updatedAt: string;
+  createdAt: string;
+  globalType: "commission-imports";
+}

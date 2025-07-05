@@ -44,9 +44,9 @@ const allowedExtensions = [".csv", ".xls", ".xlsx"];
 
 export default function ImportTab() {
   const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
-  const [supplierFiles, setSupplierFiles] = useState<Record<string, File[]>>(
-    {},
-  );
+  const [supplierFiles, setSupplierFiles] = useState<
+    Record<string, File | null>
+  >({});
   const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
 
@@ -88,6 +88,38 @@ export default function ImportTab() {
   });
 
   const allSuppliers = suppliers?.docs || [];
+  // Existing imports from API (global returns a single object with files array)
+  const existingGlobalImport = global;
+  const existingFiles = existingGlobalImport?.files || [];
+
+  // Auto-load existing supplier imports on component mount
+  useEffect(() => {
+    if (existingFiles.length > 0) {
+      const existingIds = existingFiles
+        .map((fileItem) => {
+          return fileItem.supplier?.id || fileItem.supplier.id;
+        })
+        .filter(Boolean);
+
+      setSelectedSuppliers((prev) => {
+        const newIds = existingIds.filter((id: string) => !prev.includes(id));
+
+        return [...prev, ...newIds];
+      });
+
+      // Note: Cannot recreate File objects from database
+      // But we'll initialize null for suppliers that have existing files
+      const existingData: Record<string, File | null> = {};
+      existingFiles.forEach((fileItem) => {
+        const supplierId = fileItem.supplier?.id || fileItem.supplier.id;
+        if (supplierId) {
+          existingData[supplierId] = null;
+        }
+      });
+
+      setSupplierFiles((prev) => ({ ...prev, ...existingData }));
+    }
+  }, [existingFiles]);
 
   const validateFile = (file: File): string | null => {
     const hasValidType = allowedTypes.includes(file.type);
@@ -104,11 +136,11 @@ export default function ImportTab() {
 
   const handleSupplierAdd = (supplierId: string) => {
     if (!selectedSuppliers.includes(supplierId)) {
-      setSelectedSuppliers((prev) => [...prev, supplierId]);
-      // Initialize empty files array for this supplier
+      setSelectedSuppliers((prev) => [supplierId, ...prev]);
+      // Initialize null file for this supplier
       setSupplierFiles((prev) => ({
         ...prev,
-        [supplierId]: [],
+        [supplierId]: null,
       }));
     }
     setOpen(false);
@@ -186,19 +218,18 @@ export default function ImportTab() {
         });
       }
 
-      // Add file to existing files array
+      // Replace the existing file (only 1 file per supplier)
       setSupplierFiles((prev) => ({
         ...prev,
-        [supplierId]: [...(prev[supplierId] || []), file],
+        [supplierId]: file,
       }));
     }
   };
 
-  const handleRemoveFile = (supplierId: string, fileIndex: number) => {
+  const handleRemoveFile = (supplierId: string) => {
     setSupplierFiles((prev) => ({
       ...prev,
-      [supplierId]:
-        prev[supplierId]?.filter((_, index) => index !== fileIndex) || [],
+      [supplierId]: null,
     }));
   };
 
@@ -229,7 +260,6 @@ export default function ImportTab() {
       </Card>
     );
   }
-
   return (
     <Card>
       <CardHeader className="gap-0">
@@ -375,41 +405,52 @@ export default function ImportTab() {
                       )}
                     </div>
 
-                    {/* File List */}
-                    {(supplierFiles?.[supplierId]?.length ?? 0) > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-600">
-                            Fichier :
-                          </span>
-                        </div>
-                        <div className="space-y-1">
-                          {supplierFiles[supplierId]!.map((file, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center justify-between p-2 bg-white rounded text-sm"
-                            >
-                              <div className="flex items-center space-x-2">
-                                <Upload className="h-4 w-4 text-green-600" />
-                                <span className="text-gray-700">
-                                  {file.name}
-                                </span>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  handleRemoveFile(supplierId, index)
-                                }
-                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
+                    {/* File List - showing existing or new file (only 1 per supplier) */}
+                    {(() => {
+                      const existingFile = existingFiles.find(
+                        (fileItem) =>
+                          (fileItem.supplier?.id || fileItem.supplier.id) ===
+                          supplierId,
+                      );
+                      const newFile = supplierFiles?.[supplierId];
+                      const hasExistingFile = !!existingFile;
+                      const hasNewFile = !!newFile;
+
+                      if (hasExistingFile || hasNewFile) {
+                        return (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-gray-600">
+                                Fichier :
+                              </span>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between p-2 bg-white rounded text-sm">
+                                <div className="flex items-center space-x-2">
+                                  <Upload className="h-4 w-4 text-green-600" />
+                                  <span className="text-gray-700">
+                                    {hasExistingFile
+                                      ? existingFile.file.filename
+                                      : hasNewFile
+                                        ? newFile.name
+                                        : ""}
+                                  </span>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveFile(supplierId)}
+                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 );
               })}
