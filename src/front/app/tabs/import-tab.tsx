@@ -60,9 +60,9 @@ export default function ImportTab() {
     useState(getInitialSearchTerm);
 
   const {
-    error: errorGlobal,
-    data: global,
-    isLoading: loadingGlobal,
+    error: errorCommissionImports,
+    data: commissionImports,
+    isLoading: loadingCommissionImports,
   } = useQuery({
     queryKey: [
       "commissions-import",
@@ -89,12 +89,12 @@ export default function ImportTab() {
 
   const allSuppliers = suppliers?.docs || [];
   // Existing imports from API (now returns paginated commission imports)
-  const existingImports = global?.docs || [];
+  const existingImports = commissionImports?.docs || [];
 
   // Auto-load existing supplier imports on component mount
   useEffect(() => {
-    if (existingFiles.length > 0) {
-      const existingIds = existingFiles
+    if (existingImports.length > 0) {
+      const existingIds = existingImports
         .map((fileItem) => {
           return fileItem.supplier?.id || fileItem.supplier.id;
         })
@@ -109,7 +109,7 @@ export default function ImportTab() {
       // Note: Cannot recreate File objects from database
       // But we'll initialize null for suppliers that have existing files
       const existingData: Record<string, File | null> = {};
-      existingFiles.forEach((fileItem) => {
+      existingImports.forEach((fileItem) => {
         const supplierId = fileItem.supplier?.id || fileItem.supplier.id;
         if (supplierId) {
           existingData[supplierId] = null;
@@ -118,7 +118,7 @@ export default function ImportTab() {
 
       setSupplierFiles((prev) => ({ ...prev, ...existingData }));
     }
-  }, [existingFiles]);
+  }, [existingImports]);
 
   const validateFile = (file: File): string | null => {
     const hasValidType = allowedTypes.includes(file.type);
@@ -232,11 +232,11 @@ export default function ImportTab() {
     }));
   };
 
-  if (loadingGlobal || loadingSuppliers) {
+  if (loadingCommissionImports || loadingSuppliers) {
     return <TabSkeleton />;
   }
 
-  if (errorSuppliers || errorGlobal) {
+  if (errorSuppliers || errorCommissionImports) {
     return (
       <Card>
         <CardContent className="p-6 flex items-center justify-center">
@@ -406,7 +406,7 @@ export default function ImportTab() {
 
                     {/* File List - showing existing or new file (only 1 per supplier) */}
                     {(() => {
-                      const existingFile = existingFiles.find(
+                      const existingFile = existingImports.find(
                         (fileItem) =>
                           (fileItem.supplier?.id || fileItem.supplier.id) ===
                           supplierId,
