@@ -41,10 +41,10 @@ export interface SuppliersCommissionsColumn {
   createdAt: string;
 }
 
-export interface GlobalCommissionsImport {
+export interface CommissionImport {
   id: string;
-  files: Array<{ id: string; supplier: Supplier; file: Media }>;
+  supplier: Supplier;
+  file: Media;
   updatedAt: string;
   createdAt: string;
-  globalType: "commission-imports";
 }

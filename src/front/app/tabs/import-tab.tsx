@@ -1,4 +1,4 @@
-import { getGlobalCommissionsImportQuery } from "@/front/api/queries/commission-queries";
+import { getCommissionsImportQuery } from "@/front/api/queries/commission-queries";
 import { getSuppliersQuery } from "@/front/api/queries/supplier-queries";
 import { Alert, AlertDescription } from "@/front/components/ui/alert";
 import { Button } from "@/front/components/ui/button";
@@ -65,12 +65,12 @@ export default function ImportTab() {
     isLoading: loadingGlobal,
   } = useQuery({
     queryKey: [
-      "global-commissions-import",
+      "commissions-import",
       {
         limit: 0,
       },
     ],
-    queryFn: getGlobalCommissionsImportQuery,
+    queryFn: getCommissionsImportQuery,
   });
 
   const {
@@ -90,7 +90,7 @@ export default function ImportTab() {
   const allSuppliers = suppliers?.docs || [];
   // Existing imports from API (global returns a single object with files array)
   const existingGlobalImport = global;
-  const existingFiles = existingGlobalImport?.files || [];
+  const existingFiles = existingGlobalImport?.docs || [];
 
   // Auto-load existing supplier imports on component mount
   useEffect(() => {
@@ -429,21 +429,24 @@ export default function ImportTab() {
                                 <div className="flex items-center space-x-2">
                                   <Upload className="h-4 w-4 text-green-600" />
                                   <span className="text-gray-700">
-                                    {hasExistingFile
-                                      ? existingFile.file.filename
-                                      : hasNewFile
-                                        ? newFile.name
+                                    {hasNewFile
+                                      ? newFile.name
+                                      : hasExistingFile
+                                        ? existingFile.file.filename
                                         : ""}
                                   </span>
                                 </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRemoveFile(supplierId)}
-                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
+                                {/* Only show remove button for new files, not existing database files */}
+                                {hasNewFile && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRemoveFile(supplierId)}
+                                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           </div>
