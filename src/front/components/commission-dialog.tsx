@@ -141,6 +141,7 @@ export default function CreateCommissionDialog({
       const suppliersArray = Object.entries(
         commissionImportUser.suppliersData,
       ).map(([supplierId, supplier]) => ({
+        id: "",
         supplier: supplierId,
         encours: supplier.encours,
         production: supplier.production,
