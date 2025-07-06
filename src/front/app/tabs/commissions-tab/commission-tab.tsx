@@ -163,16 +163,6 @@ export default function CommissionsTab() {
     );
   }
 
-  if (!data || !data.docs.length) {
-    return (
-      <Card>
-        <CardContent className="p-6 flex items-center justify-center">
-          <p className="text-gray-600">Il n'y a pas de commission disponible</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <Card>
       <CardHeader className="gap-0">
@@ -322,7 +312,7 @@ export default function CommissionsTab() {
         )}
 
         {/* Pagination */}
-        {data?.totalPages > 1 && (
+        {data?.totalPages && data.totalPages > 1 && (
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               Affichage de {(data.page - 1) * data.limit + 1} à{" "}
