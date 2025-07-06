@@ -181,7 +181,7 @@ export default function CreateCommissionDialog({
           }}
           className="space-y-6"
         >
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-4 mb-4">
             {/* Left Column - Basic Information */}
             <div className="space-y-4">
               <Card className="gap-2 py-4">
@@ -386,6 +386,8 @@ export default function CreateCommissionDialog({
                     </CardContent>
                   </Card>
                 </div>
+
+                <div className="border-t"></div>
 
                 {Object.values(commissionImportUser.suppliersData).map(
                   (supplier) => (
