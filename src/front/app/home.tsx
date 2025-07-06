@@ -19,9 +19,7 @@ import { AuthContext } from "../context/auth-context";
 const ImportTab = lazy(() => import("./tabs/import-tab"));
 const UserCodesTab = lazy(() => import("./tabs/user-code-mapping"));
 const SupplierMappingTab = lazy(() => import("./tabs/supplier-column-mapping"));
-const CommissionsTab = lazy(
-  () => import("./tabs/commissions-tab/commission-tab"),
-);
+const CommissionsTab = lazy(() => import("./tabs/commission-tab"));
 
 // Loading skeleton component
 export function TabSkeleton() {
