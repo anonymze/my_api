@@ -173,8 +173,8 @@ export default function CreateCommissionDialog({
       form.setFieldValue("employee", employee);
       form.setFieldValue("commissionRate", employee.defaultRate.toString());
 
-      // Clear the employee field errors manually
-      form.setFieldMeta("employee", { errors: [] });
+      // Validate the employee field to clear errors
+      form.validateField("employee", "change");
 
       // Set selected employee ID to trigger commission fetch
       setSelectedEmployeeId(user.id);
@@ -188,37 +188,6 @@ export default function CreateCommissionDialog({
       );
     }
     setPopoverOpen(false);
-  };
-
-  const validateEmployee = ({ value }: { value: Employee | null }) => {
-    if (!value) return "L'employé est requis";
-    return undefined;
-  };
-
-  const validatePeriod = ({ value }: { value: Date | undefined }) => {
-    if (!value) return "La période est requise";
-    return undefined;
-  };
-
-  const validateSalesAmount = ({ value }: { value: string }) => {
-    if (!value || Number.parseFloat(value) <= 0) {
-      return "Un montant de vente valide est requis";
-    }
-    return undefined;
-  };
-
-  const validateCommissionRate = ({ value }: { value: string }) => {
-    if (!value || Number.parseFloat(value) <= 0) {
-      return "Un taux de commission valide est requis";
-    }
-    return undefined;
-  };
-
-  const validateCommissionAmount = ({ value }: { value: string }) => {
-    if (!value || Number.parseFloat(value) <= 0) {
-      return "Un montant de commission valide est requis";
-    }
-    return undefined;
   };
 
   return (
@@ -277,7 +246,9 @@ export default function CreateCommissionDialog({
                               aria-expanded={popoverOpen}
                               className="w-full justify-between"
                             >
-                              {field.state.value ? field.state.value.name : "Choisir un utilisateur..."}
+                              {field.state.value
+                                ? field.state.value.name
+                                : "Choisir un utilisateur..."}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                           </PopoverTrigger>
@@ -658,3 +629,34 @@ export default function CreateCommissionDialog({
     </Dialog>
   );
 }
+
+const validateEmployee = ({ value }: { value: Employee | null }) => {
+  if (!value) return "L'employé est requis";
+  return undefined;
+};
+
+const validatePeriod = ({ value }: { value: Date | undefined }) => {
+  if (!value) return "La période est requise";
+  return undefined;
+};
+
+const validateSalesAmount = ({ value }: { value: string }) => {
+  if (!value || Number.parseFloat(value) <= 0) {
+    return "Un montant de vente valide est requis";
+  }
+  return undefined;
+};
+
+const validateCommissionRate = ({ value }: { value: string }) => {
+  if (!value || Number.parseFloat(value) <= 0) {
+    return "Un taux de commission valide est requis";
+  }
+  return undefined;
+};
+
+const validateCommissionAmount = ({ value }: { value: string }) => {
+  if (!value || Number.parseFloat(value) <= 0) {
+    return "Un montant de commission valide est requis";
+  }
+  return undefined;
+};
