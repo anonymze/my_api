@@ -67,15 +67,16 @@ export default function CreateCommissionDialog({
   onOpenChange,
 }: CreateCommissionDialogProps) {
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(
     null,
   );
 
   const form = useForm({
     defaultValues: {
-      app_user: null as User | null | undefined,
+      app_user: null as User | null,
       commission_suppliers: null as Supplier["id"] | null,
-      date: null,
+      date: new Date(),
     },
     onSubmit: async ({ value }) => {},
   });
@@ -113,6 +114,7 @@ export default function CreateCommissionDialog({
     const user = users?.docs.find((u) => u.id === userId);
     if (user) {
       form.setFieldValue("app_user", user);
+      setSelectedEmployeeId(user.id);
       // Validate the employee field to clear errors
       form.validateField("app_user", "change");
     }
@@ -249,7 +251,10 @@ export default function CreateCommissionDialog({
                           Mois de commission{" "}
                           <span className="text-red-500">*</span>
                         </Label>
-                        <Popover>
+                        <Popover
+                          open={calendarOpen}
+                          onOpenChange={setCalendarOpen}
+                        >
                           <PopoverTrigger asChild>
                             <Button
                               variant="outline"
@@ -262,7 +267,13 @@ export default function CreateCommissionDialog({
                             >
                               <CalendarIcon className="mr-2 h-4 w-4" />
                               {field.state.value
-                                ? "05-2025"
+                                ? field.state.value.toLocaleDateString(
+                                    "fr-FR",
+                                    {
+                                      month: "2-digit",
+                                      year: "numeric",
+                                    },
+                                  )
                                 : "Sélectionner le mois"}
                             </Button>
                           </PopoverTrigger>
@@ -271,11 +282,19 @@ export default function CreateCommissionDialog({
                               mode="single"
                               selected={field.state.value}
                               onSelect={(date) => {
-                                // console.log("date", date);
-                                // if (date) {
-                                //   field.handleChange(date);
-                                // }
+                                console.log("Date selected:", date);
+                                console.log(
+                                  "Field before change:",
+                                  field.state.value,
+                                );
+                                field.handleChange(date);
+                                console.log(
+                                  "Field after change:",
+                                  field.state.value,
+                                );
+                                setCalendarOpen(false);
                               }}
+                              initialFocus
                             />
                           </PopoverContent>
                         </Popover>
