@@ -34,12 +34,14 @@ import {
   CalendarIcon,
   ChevronsUpDown,
   DollarSign,
+  Loader2,
   Percent,
   Save,
   X,
 } from "lucide-react";
 import { useState } from "react";
 import { getAppUsersQuery } from "../api/queries/app-user-queries";
+import { getCommissionsQuery } from "../api/queries/commission-queries";
 import { cn } from "../lib/utils";
 import type { User } from "../types/user";
 import {
@@ -91,11 +93,16 @@ export default function CreateCommissionDialog({
   onOpenChange,
 }: CreateCommissionDialogProps) {
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(
+    null,
+  );
 
   const form = useForm({
     defaultValues: {
       employee: null as Employee | null,
       period: undefined as Date | undefined,
+      production: "",
+      encours: "",
       salesAmount: "",
       commissionRate: "",
       commissionAmount: "",
@@ -119,6 +126,24 @@ export default function CreateCommissionDialog({
     queryFn: getAppUsersQuery,
     enabled: open,
   });
+
+  const {
+    error: errorCommissions,
+    data: commissions,
+    isLoading: loadingCommissions,
+  } = useQuery({
+    queryKey: [
+      "commissions",
+      {
+        userId: selectedEmployeeId,
+      },
+    ],
+    queryFn: getCommissionsQuery,
+    enabled: !!selectedEmployeeId,
+  });
+
+  console.log(users);
+  console.log(open);
 
   // Auto-calculate commission when sales amount or rate changes
   const handleCalculation = (
@@ -147,6 +172,12 @@ export default function CreateCommissionDialog({
       };
       form.setFieldValue("employee", employee);
       form.setFieldValue("commissionRate", employee.defaultRate.toString());
+
+      // Clear the employee field errors manually
+      form.setFieldMeta("employee", { errors: [] });
+
+      // Set selected employee ID to trigger commission fetch
+      setSelectedEmployeeId(user.id);
 
       // Recalculate if in automatic mode
       const currentValues = form.state.values;
@@ -214,7 +245,12 @@ export default function CreateCommissionDialog({
           <div className="grid grid-cols-1 gap-6">
             {/* Left Column - Basic Information */}
             <div className="space-y-4">
-              <Card>
+              <Card className="gap-2 py-4">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    Commission
+                  </CardTitle>
+                </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Employee Field */}
                   <form.Field
@@ -232,6 +268,7 @@ export default function CreateCommissionDialog({
                         <Popover
                           open={popoverOpen}
                           onOpenChange={setPopoverOpen}
+                          modal={true}
                         >
                           <PopoverTrigger asChild>
                             <Button
@@ -240,7 +277,7 @@ export default function CreateCommissionDialog({
                               aria-expanded={popoverOpen}
                               className="w-full justify-between"
                             >
-                              Choisir un utilisateur...
+                              {field.state.value ? field.state.value.name : "Choisir un utilisateur..."}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                           </PopoverTrigger>
@@ -252,11 +289,11 @@ export default function CreateCommissionDialog({
                               </CommandEmpty>
                               <CommandGroup className="max-h-[230px] overflow-auto">
                                 {loadingUsers ? (
-                                  <div className="p-4 text-center text-sm text-gray-500">
+                                  <div className="pb-4 text-center text-sm text-gray-500">
                                     Chargement des utilisateurs...
                                   </div>
                                 ) : errorUsers ? (
-                                  <div className="p-4 text-center text-sm text-red-500">
+                                  <div className="pb-4 text-center text-sm text-red-500">
                                     Erreur lors du chargement
                                   </div>
                                 ) : (
@@ -334,7 +371,6 @@ export default function CreateCommissionDialog({
                               mode="single"
                               selected={field.state.value}
                               onSelect={(date) => field.handleChange(date)}
-                              initialFocus
                             />
                           </PopoverContent>
                         </Popover>
@@ -351,188 +387,246 @@ export default function CreateCommissionDialog({
             </div>
 
             {/* Right Column - Financial Information */}
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <DollarSign className="w-4 h-4" />
-                    Détails financiers
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Sales Amount Field */}
-                  <form.Field
-                    name="salesAmount"
-                    validators={{
-                      onChange: validateSalesAmount,
-                    }}
-                  >
-                    {(field) => (
-                      <div className="space-y-2">
-                        <Label htmlFor="salesAmount">
-                          Montant des ventes *
-                        </Label>
-                        <div className="relative">
-                          <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                          <Input
-                            id="salesAmount"
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            value={field.state.value}
-                            onChange={(e) => {
-                              field.handleChange(e.target.value);
-                              const currentValues = form.state.values;
-                              handleCalculation(
-                                e.target.value,
-                                currentValues.commissionRate,
-                                currentValues.calculationType,
-                              );
-                            }}
-                            className={cn(
-                              "pl-10",
-                              field.state.meta.errors.length > 0 &&
-                                "border-red-500",
-                            )}
-                          />
+            {loadingCommissions ? (
+              <div className="space-y-4">
+                <Card className="gap-1 py-0">
+                  <CardContent className="flex items-center justify-center py-8">
+                    <div className="flex flex-col items-center gap-3">
+                      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                      <p className="text-sm text-gray-600">
+                        Chargement des calculs de commission...
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : selectedEmployeeId ? (
+              <>
+                <div className="space-y-4">
+                  <Card className="gap-1 py-4">
+                    <CardHeader className="">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        Montants globaux
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-production">
+                            Production
+                          </Label>
+                          <div className="flex items-center gap-2 p-2 bg-orange-50 rounded-lg border border-production">
+                            <span className="text-lg font-semibold text-production">
+                              12 450,00 €
+                            </span>
+                          </div>
                         </div>
-                        {field.state.meta.errors.length > 0 && (
-                          <p className="text-sm text-red-500">
-                            {field.state.meta.errors[0]}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </form.Field>
-
-                  {/* Commission Rate Field */}
-                  <form.Field
-                    name="commissionRate"
-                    validators={{
-                      onChange: validateCommissionRate,
-                    }}
-                  >
-                    {(field) => (
-                      <div className="space-y-2">
-                        <Label htmlFor="commissionRate">
-                          Taux de commission (%) *
-                        </Label>
-                        <div className="relative">
-                          <Percent className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                          <Input
-                            id="commissionRate"
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            value={field.state.value}
-                            onChange={(e) => {
-                              field.handleChange(e.target.value);
-                              const currentValues = form.state.values;
-                              handleCalculation(
-                                currentValues.salesAmount,
-                                e.target.value,
-                                currentValues.calculationType,
-                              );
-                            }}
-                            className={cn(
-                              "pl-10",
-                              field.state.meta.errors.length > 0 &&
-                                "border-red-500",
-                            )}
-                          />
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-encours">
+                            Encours
+                          </Label>
+                          <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-encours">
+                            <span className="text-lg font-semibold text-encours">
+                              8 750,00 €
+                            </span>
+                          </div>
                         </div>
-                        {field.state.meta.errors.length > 0 && (
-                          <p className="text-sm text-red-500">
-                            {field.state.meta.errors[0]}
-                          </p>
-                        )}
                       </div>
-                    )}
-                  </form.Field>
+                    </CardContent>
+                  </Card>
+                </div>
 
-                  {/* Calculation Type Field */}
-                  <form.Field name="calculationType">
-                    {(field) => (
-                      <div className="space-y-2">
-                        <Label htmlFor="calculationType">Type de calcul</Label>
-                        <Select
-                          value={field.state.value}
-                          onValueChange={(value: "manual" | "automatic") => {
-                            field.handleChange(value);
-                            if (value === "automatic") {
-                              const currentValues = form.state.values;
-                              handleCalculation(
-                                currentValues.salesAmount,
-                                currentValues.commissionRate,
-                                value,
-                              );
-                            }
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="automatic">
-                              Automatique (Taux × Ventes)
-                            </SelectItem>
-                            <SelectItem value="manual">
-                              Saisie manuelle
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                  </form.Field>
-
-                  {/* Commission Amount Field */}
-                  <form.Field
-                    name="commissionAmount"
-                    validators={{
-                      onChange: validateCommissionAmount,
-                    }}
-                  >
-                    {(field) => (
-                      <div className="space-y-2">
-                        <Label htmlFor="commissionAmount">
-                          Montant de la commission *
-                        </Label>
-                        <div className="relative">
-                          <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                          <Input
-                            id="commissionAmount"
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            value={field.state.value}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                            className={cn(
-                              "pl-10",
-                              field.state.meta.errors.length > 0 &&
-                                "border-red-500",
+                <div className="space-y-4">
+                  <Card className="gap-2 py-4">
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        Détails
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Sales Amount Field */}
+                      <form.Field
+                        name="salesAmount"
+                        validators={{
+                          onChange: validateSalesAmount,
+                        }}
+                      >
+                        {(field) => (
+                          <div className="space-y-2">
+                            <Label htmlFor="salesAmount">
+                              Montant des ventes *
+                            </Label>
+                            <div className="relative">
+                              <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                              <Input
+                                id="salesAmount"
+                                type="number"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={field.state.value}
+                                onChange={(e) => {
+                                  field.handleChange(e.target.value);
+                                  const currentValues = form.state.values;
+                                  handleCalculation(
+                                    e.target.value,
+                                    currentValues.commissionRate,
+                                    currentValues.calculationType,
+                                  );
+                                }}
+                                className={cn(
+                                  "pl-10",
+                                  field.state.meta.errors.length > 0 &&
+                                    "border-red-500",
+                                )}
+                              />
+                            </div>
+                            {field.state.meta.errors.length > 0 && (
+                              <p className="text-sm text-red-500">
+                                {field.state.meta.errors[0]}
+                              </p>
                             )}
-                            disabled={
-                              form.state.values.calculationType === "automatic"
-                            }
-                          />
-                        </div>
-                        {field.state.meta.errors.length > 0 && (
-                          <p className="text-sm text-red-500">
-                            {field.state.meta.errors[0]}
-                          </p>
+                          </div>
                         )}
-                        {form.state.values.calculationType === "automatic" && (
-                          <p className="text-xs text-muted-foreground">
-                            Calculé automatiquement basé sur le montant des
-                            ventes et le taux de commission
-                          </p>
+                      </form.Field>
+
+                      {/* Commission Rate Field */}
+                      <form.Field
+                        name="commissionRate"
+                        validators={{
+                          onChange: validateCommissionRate,
+                        }}
+                      >
+                        {(field) => (
+                          <div className="space-y-2">
+                            <Label htmlFor="commissionRate">
+                              Taux de commission (%) *
+                            </Label>
+                            <div className="relative">
+                              <Percent className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                              <Input
+                                id="commissionRate"
+                                type="number"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={field.state.value}
+                                onChange={(e) => {
+                                  field.handleChange(e.target.value);
+                                  const currentValues = form.state.values;
+                                  handleCalculation(
+                                    currentValues.salesAmount,
+                                    e.target.value,
+                                    currentValues.calculationType,
+                                  );
+                                }}
+                                className={cn(
+                                  "pl-10",
+                                  field.state.meta.errors.length > 0 &&
+                                    "border-red-500",
+                                )}
+                              />
+                            </div>
+                            {field.state.meta.errors.length > 0 && (
+                              <p className="text-sm text-red-500">
+                                {field.state.meta.errors[0]}
+                              </p>
+                            )}
+                          </div>
                         )}
-                      </div>
-                    )}
-                  </form.Field>
-                </CardContent>
-              </Card>
-            </div>
+                      </form.Field>
+
+                      {/* Calculation Type Field */}
+                      <form.Field name="calculationType">
+                        {(field) => (
+                          <div className="space-y-2">
+                            <Label htmlFor="calculationType">
+                              Type de calcul
+                            </Label>
+                            <Select
+                              value={field.state.value}
+                              onValueChange={(
+                                value: "manual" | "automatic",
+                              ) => {
+                                field.handleChange(value);
+                                if (value === "automatic") {
+                                  const currentValues = form.state.values;
+                                  handleCalculation(
+                                    currentValues.salesAmount,
+                                    currentValues.commissionRate,
+                                    value,
+                                  );
+                                }
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="automatic">
+                                  Automatique (Taux × Ventes)
+                                </SelectItem>
+                                <SelectItem value="manual">
+                                  Saisie manuelle
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </form.Field>
+
+                      {/* Commission Amount Field */}
+                      <form.Field
+                        name="commissionAmount"
+                        validators={{
+                          onChange: validateCommissionAmount,
+                        }}
+                      >
+                        {(field) => (
+                          <div className="space-y-2">
+                            <Label htmlFor="commissionAmount">
+                              Montant de la commission *
+                            </Label>
+                            <div className="relative">
+                              <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                              <Input
+                                id="commissionAmount"
+                                type="number"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={field.state.value}
+                                onChange={(e) =>
+                                  field.handleChange(e.target.value)
+                                }
+                                className={cn(
+                                  "pl-10",
+                                  field.state.meta.errors.length > 0 &&
+                                    "border-red-500",
+                                )}
+                                disabled={
+                                  form.state.values.calculationType ===
+                                  "automatic"
+                                }
+                              />
+                            </div>
+                            {field.state.meta.errors.length > 0 && (
+                              <p className="text-sm text-red-500">
+                                {field.state.meta.errors[0]}
+                              </p>
+                            )}
+                            {form.state.values.calculationType ===
+                              "automatic" && (
+                              <p className="text-xs text-muted-foreground">
+                                Calculé automatiquement basé sur le montant des
+                                ventes et le taux de commission
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </form.Field>
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            ) : null}
           </div>
 
           {/* Action Buttons */}

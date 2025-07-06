@@ -118,11 +118,11 @@ export default function CommissionPage() {
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center gap-2">
               <CodeIcon className="w-4 h-4" />
-              Codes utilisateur
+              Mapping codes utilisateurs
             </TabsTrigger>
             <TabsTrigger value="suppliers" className="flex items-center gap-2">
               <CodeIcon className="w-4 h-4" />
-              Mapping fournisseur
+              Mapping fournisseurs colonnes
             </TabsTrigger>
           </TabsList>
 
