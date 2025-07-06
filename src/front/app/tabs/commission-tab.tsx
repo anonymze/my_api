@@ -1,5 +1,6 @@
 import {
   deleteCommissionQuery,
+  getCommissionExportQuery,
   getCommissionsQuery,
 } from "@/front/api/queries/commission-queries";
 import CreateCommissionDialog from "@/front/components/commission-dialog";
@@ -114,6 +115,52 @@ export default function CommissionsTab() {
     },
   });
 
+  // Export commission mutation
+  const exportCommissionMutation = useMutation({
+    mutationFn: getCommissionExportQuery,
+    onSuccess: (response, commissionId) => {
+      const { data, contentType } = response;
+
+      // Determine file extension based on content type
+      let extension = "";
+      let mimeType = contentType || "application/octet-stream";
+
+      if (contentType?.includes("text/csv")) {
+        extension = ".csv";
+        mimeType = "text/csv";
+      } else if (contentType?.includes("application/vnd.ms-excel")) {
+        extension = ".xls";
+        mimeType = "application/vnd.ms-excel";
+      } else if (
+        contentType?.includes(
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+      ) {
+        extension = ".xlsx";
+        mimeType =
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      } else {
+        // Default to Excel if unknown
+        extension = ".xlsx";
+        mimeType =
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      }
+
+      const blob = new Blob([data], { type: mimeType });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `commission-${commissionId}${extension}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    },
+    onError: () => {
+      alert("Erreur lors de l'exportation de la commission");
+    },
+  });
+
   // Update URL when search term changes
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
@@ -202,7 +249,10 @@ export default function CommissionsTab() {
               </CardDescription>
             </div>
             <Button
-              disabled={deleteCommissionMutation.isPending}
+              disabled={
+                deleteCommissionMutation.isPending ||
+                exportCommissionMutation.isPending
+              }
               onClick={() => setShowCreateDialog(true)}
             >
               Créer une commission
@@ -293,7 +343,10 @@ export default function CommissionsTab() {
                       <TableCell className="text-right px-5">
                         <DropdownMenu>
                           <DropdownMenuTrigger
-                            disabled={deleteCommissionMutation.isPending}
+                            disabled={
+                              deleteCommissionMutation.isPending ||
+                              exportCommissionMutation.isPending
+                            }
                             asChild
                           >
                             <Button variant="ghost" className="h-8 w-8 p-0">
@@ -321,7 +374,6 @@ export default function CommissionsTab() {
                               onClick={() =>
                                 deleteCommissionMutation.mutate(commission.id)
                               }
-                              disabled={deleteCommissionMutation.isPending}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               <span>Supprimer</span>
@@ -329,8 +381,9 @@ export default function CommissionsTab() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={() =>
-                                console.log("Export", commission.id)
+                                exportCommissionMutation.mutate(commission.id)
                               }
+                              disabled={exportCommissionMutation.isPending}
                             >
                               <Download className="mr-2 h-4 w-4" />
                               <span>Exporter</span>
