@@ -41,7 +41,7 @@ export const createCommissionQuery = async (data: {
 }) => {
   console.log(data);
   const response = await api.post(
-    `/api/commissions/commission-suppliers/${data.app_user}`,
+    "/api/commissions/commission-suppliers",
     data,
   );
   return response.data;
