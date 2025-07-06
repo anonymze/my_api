@@ -78,7 +78,9 @@ export default function CreateCommissionDialog({
       commission_suppliers: null as Supplier["id"] | null,
       date: new Date(),
     },
-    onSubmit: async ({ value }) => {},
+    onSubmit: async ({ value }) => {
+      console.log(value);
+    },
   });
 
   const {
