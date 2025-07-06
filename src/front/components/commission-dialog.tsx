@@ -75,7 +75,7 @@ export default function CreateCommissionDialog({
       );
       form.setFieldValue("app_user", null);
       setSelectedEmployeeId(null);
-      onOpenChange(false);
+      // onOpenChange(false);
     },
   });
 
