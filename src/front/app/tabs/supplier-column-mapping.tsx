@@ -311,7 +311,7 @@ export default function SupplierMappingTab() {
       <Card>
         <CardContent className="p-6 flex items-center justify-center">
           <p className="text-gray-600">
-            Il n'y a pas de fournisseurs disponibles
+            Il n'y a pas de fournisseur disponible
           </p>
         </CardContent>
       </Card>

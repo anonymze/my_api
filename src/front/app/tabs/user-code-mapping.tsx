@@ -285,7 +285,7 @@ export default function UsersCodeTab() {
       <Card>
         <CardContent className="p-6 flex items-center justify-center">
           <p className="text-gray-600">
-            Il n'y a pas de d'utilisateurs disponibles
+            Il n'y a pas de d'utilisateur disponible
           </p>
         </CardContent>
       </Card>

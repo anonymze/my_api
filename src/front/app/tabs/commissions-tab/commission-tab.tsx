@@ -167,9 +167,7 @@ export default function CommissionsTab() {
     return (
       <Card>
         <CardContent className="p-6 flex items-center justify-center">
-          <p className="text-gray-600">
-            Il n'y a pas de commissions disponibles
-          </p>
+          <p className="text-gray-600">Il n'y a pas de commission disponible</p>
         </CardContent>
       </Card>
     );
@@ -264,18 +262,10 @@ export default function CommissionsTab() {
                       </Badge>
                     </TableCell>
                     <TableCell className="px-5">
-                      {commission.informations?.production ? (
-                        <Badge variant="secondary">
-                          {commission.informations?.production}
-                        </Badge>
-                      ) : null}
+                      <Badge variant="secondary">0</Badge>
                     </TableCell>
                     <TableCell className="px-5">
-                      {commission.informations?.encours ? (
-                        <Badge variant="secondary">
-                          {commission.informations?.encours}
-                        </Badge>
-                      ) : null}
+                      <Badge variant="secondary">0</Badge>
                     </TableCell>
 
                     <TableCell className="text-right px-5">
