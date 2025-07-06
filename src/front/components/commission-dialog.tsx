@@ -122,6 +122,7 @@ export default function CreateCommissionDialog({
     enabled: !!selectedEmployeeId,
     refetchOnMount: "always",
     staleTime: 0,
+    gcTime: 0,
   });
 
   // Auto-calculate commission when sales amount or rate changes
