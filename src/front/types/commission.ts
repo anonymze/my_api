@@ -53,3 +53,17 @@ export interface CommissionImport {
   updatedAt: string;
   createdAt: string;
 }
+
+export interface CommissionImportUser {
+  id: string;
+  totalGlobalEncours: string;
+  totalGlobalProduction: string;
+  totalGlobalStructured: string;
+  suppliersData: {
+    [key: string]: {
+      encours: number;
+      production: number;
+      structured: number;
+    };
+  };
+}

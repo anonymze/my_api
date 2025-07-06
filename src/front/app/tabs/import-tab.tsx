@@ -94,6 +94,7 @@ export default function ImportTab() {
     mutationFn: createCommissionImportQuery,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["commissions-import"] });
+      queryClient.invalidateQueries({ queryKey: ["commission-import-user"] });
     },
   });
 
@@ -101,6 +102,7 @@ export default function ImportTab() {
     mutationFn: deleteCommissionImportQuery,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["commissions-import"] });
+      queryClient.invalidateQueries({ queryKey: ["commission-import-user"] });
     },
   });
 

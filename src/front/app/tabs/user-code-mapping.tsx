@@ -43,6 +43,7 @@ export default function UsersCodeTab() {
     mutationFn: deleteAppUserCommissionCodeQuery,
     onSuccess: (_, deletedId) => {
       queryClient.invalidateQueries({ queryKey: ["commissions-code"] });
+      queryClient.invalidateQueries({ queryKey: ["commission-import-user"] });
 
       // Update local state to remove the deleted user
       const deletedMapping = existingCodeUsers.find(
@@ -65,6 +66,7 @@ export default function UsersCodeTab() {
     mutationFn: createAppUserCommissionCodeQuery,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["commissions-code"] });
+      queryClient.invalidateQueries({ queryKey: ["commission-import-user"] });
       // Local state will be updated by the useEffect when the query refetches
     },
     onError: (error) => {
@@ -78,6 +80,7 @@ export default function UsersCodeTab() {
     mutationFn: updateAppUserCommissionCodeQuery,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["commissions-code"] });
+      queryClient.invalidateQueries({ queryKey: ["commission-import-user"] });
       // Local state will be updated by the useEffect when the query refetches
     },
     onError: (error) => {

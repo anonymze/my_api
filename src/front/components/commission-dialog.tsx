@@ -122,6 +122,8 @@ export default function CreateCommissionDialog({
     enabled: !!selectedEmployeeId,
   });
 
+  console.log(commissionImportUser);
+
   // Auto-calculate commission when sales amount or rate changes
   const handleCalculation = (
     salesAmount: string,
@@ -294,7 +296,7 @@ export default function CreateCommissionDialog({
                     {(field) => (
                       <div className="space-y-2">
                         <Label>
-                          Période de commission{" "}
+                          Mois de commission{" "}
                           <span className="text-red-500">*</span>
                         </Label>
                         <Popover>
@@ -311,7 +313,7 @@ export default function CreateCommissionDialog({
                               <CalendarIcon className="mr-2 h-4 w-4" />
                               {field.state.value
                                 ? "05-2025"
-                                : "Sélectionner la période"}
+                                : "Sélectionner le mois"}
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="start">
@@ -360,7 +362,7 @@ export default function CreateCommissionDialog({
                   </CardContent>
                 </Card>
               </div>
-            ) : selectedEmployeeId ? (
+            ) : selectedEmployeeId && commissionImportUser ? (
               <>
                 <div className="space-y-4">
                   <Card className="gap-1 py-4">
@@ -377,7 +379,7 @@ export default function CreateCommissionDialog({
                           </Label>
                           <div className="flex items-center gap-2 p-2 bg-orange-50 rounded-lg border border-production">
                             <span className="text-lg font-semibold text-production">
-                              12 450,00 €
+                              {commissionImportUser.totalGlobalProduction}€
                             </span>
                           </div>
                         </div>
@@ -387,7 +389,7 @@ export default function CreateCommissionDialog({
                           </Label>
                           <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-encours">
                             <span className="text-lg font-semibold text-encours">
-                              8 750,00 €
+                              {commissionImportUser.totalGlobalEncours}€
                             </span>
                           </div>
                         </div>
@@ -625,7 +627,7 @@ const validateEmployee = ({ value }: { value: Employee | null }) => {
 };
 
 const validatePeriod = ({ value }: { value: Date | undefined }) => {
-  if (!value) return "La période est requise";
+  if (!value) return "Le mois est requis";
   return undefined;
 };
 

@@ -4,6 +4,7 @@ import type {
   AppUsersCommissionsCode,
   Commission,
   CommissionImport,
+  CommissionImportUser,
   SuppliersCommissionsColumn,
 } from "@/front/types/commission";
 import type { PaginatedResponse } from "@/front/types/response";
@@ -32,7 +33,9 @@ export async function getCommissionImportUserQuery({
 }) {
   const [, userId] = queryKey;
 
-  const response = await api.get<any>(`/api/commission-imports/${userId}`);
+  const response = await api.get<CommissionImportUser>(
+    `/api/commission-imports/${userId}`,
+  );
   return response.data;
 }
 
