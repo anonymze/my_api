@@ -20,7 +20,7 @@ import {
   PopoverTrigger,
 } from "@/front/components/ui/popover";
 import { useForm } from "@tanstack/react-form";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
 import {
   Calculator,
@@ -31,9 +31,14 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { queryClient } from "../api/_queries";
 import { getAppUsersQuery } from "../api/queries/app-user-queries";
-import { getCommissionImportUserQuery } from "../api/queries/commission-queries";
+import {
+  createCommissionQuery,
+  getCommissionImportUserQuery,
+} from "../api/queries/commission-queries";
 import { cn } from "../lib/utils";
+import type { Supplier } from "../types/supplier";
 import type { User } from "../types/user";
 import {
   Command,
@@ -42,20 +47,6 @@ import {
   CommandInput,
   CommandItem,
 } from "./ui/command";
-
-interface Employee {
-  id: number;
-  name: string;
-  code: string;
-  email: string;
-  defaultRate: number;
-}
-
-interface Supplier {
-  id: number;
-  name: string;
-  defaultRate: number;
-}
 
 interface CreateCommissionDialogProps {
   open: boolean;
@@ -72,6 +63,22 @@ export default function CreateCommissionDialog({
     null,
   );
 
+  const createCommission = useMutation({
+    mutationFn: createCommissionQuery,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["commissions"] });
+      onOpenChange(false);
+    },
+    onError: (error) => {
+      alert(
+        "Une erreur est survenue lors de la création de la commission, recommencez ou contactez le développeur.",
+      );
+      form.setFieldValue("app_user", null);
+      setSelectedEmployeeId(null);
+      onOpenChange(false);
+    },
+  });
+
   const form = useForm({
     defaultValues: {
       app_user: null as User | null,
@@ -79,7 +86,19 @@ export default function CreateCommissionDialog({
       date: new Date(),
     },
     onSubmit: async ({ value }) => {
-      console.log(value);
+      const { app_user, commission_suppliers, date } = value;
+
+      if (!app_user) return;
+
+      createCommission.mutate({
+        app_user: app_user.id,
+        commission_suppliers: "",
+        date: value.date.toString(),
+        structured_product: undefined,
+        broqueur: undefined,
+        up_front: undefined,
+        title: undefined,
+      });
     },
   });
 
@@ -284,19 +303,11 @@ export default function CreateCommissionDialog({
                               mode="single"
                               selected={field.state.value}
                               onSelect={(date) => {
-                                console.log("Date selected:", date);
-                                console.log(
-                                  "Field before change:",
-                                  field.state.value,
-                                );
-                                field.handleChange(date);
-                                console.log(
-                                  "Field after change:",
-                                  field.state.value,
-                                );
-                                setCalendarOpen(false);
+                                if (date) {
+                                  field.handleChange(date);
+                                  setCalendarOpen(false);
+                                }
                               }}
-                              initialFocus
                             />
                           </PopoverContent>
                         </Popover>
@@ -376,7 +387,7 @@ export default function CreateCommissionDialog({
 
                 {Object.values(commissionImportUser.suppliersData).map(
                   (supplier) => (
-                    <div className="space-y-4">
+                    <div key={supplier.supplierId} className="space-y-4">
                       <Card className="gap-1 py-4">
                         <CardHeader className="">
                           <CardTitle className="text-lg flex items-center gap-2">
@@ -420,7 +431,7 @@ export default function CreateCommissionDialog({
               Annuler
             </Button>
             <Button type="submit" disabled={form.state.isSubmitting}>
-              {form.state.isSubmitting ? (
+              {form.state.isSubmitting || createCommission.isPending ? (
                 <>
                   <Calculator className="w-4 h-4 mr-2 animate-spin" />
                   Création...

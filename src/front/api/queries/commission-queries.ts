@@ -26,6 +26,19 @@ export async function getCommissionsQuery({
   return response.data;
 }
 
+export const createCommissionQuery = async (data: {
+  app_user: string;
+  commission_suppliers: string;
+  date: string;
+  structured_product?: boolean | undefined;
+  title?: string | undefined;
+  up_front?: number | undefined;
+  broqueur?: string | undefined;
+}) => {
+  const response = await api.post("/api/commissions", data);
+  return response.data;
+};
+
 export async function getCommissionImportUserQuery({
   queryKey,
 }: {
