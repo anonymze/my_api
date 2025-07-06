@@ -30,7 +30,7 @@ import {
   Save,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { queryClient } from "../api/_queries";
 import { getAppUsersQuery } from "../api/queries/app-user-queries";
 import {
@@ -69,7 +69,7 @@ export default function CreateCommissionDialog({
       queryClient.invalidateQueries({ queryKey: ["commissions"] });
       onOpenChange(false);
     },
-    onError: (error) => {
+    onError: (_) => {
       alert(
         "Une erreur est survenue lors de la création de la commission, recommencez ou contactez le développeur.",
       );
@@ -82,19 +82,23 @@ export default function CreateCommissionDialog({
   const form = useForm({
     defaultValues: {
       app_user: null as User | null,
-      commission_suppliers: null as Supplier["id"] | null,
+      commission_suppliers: [] as Array<{
+        supplier: Supplier["id"];
+        encours: number;
+        production: number;
+      }>,
       date: new Date(),
     },
     onSubmit: async ({ value }) => {
       const { app_user, commission_suppliers, date } = value;
 
-      if (!app_user) return;
+      if (!app_user || !commission_suppliers.length) return;
 
       createCommission.mutate({
         app_user: app_user.id,
-        commission_suppliers: "",
-        date: value.date.toString(),
-        structured_product: undefined,
+        commission_suppliers,
+        date: date.toString(),
+        structured_product: false,
         broqueur: undefined,
         up_front: undefined,
         title: undefined,
@@ -130,6 +134,20 @@ export default function CreateCommissionDialog({
     staleTime: 0,
     gcTime: 0,
   });
+
+  // Auto-populate commission_suppliers when commission data is loaded
+  useEffect(() => {
+    if (commissionImportUser?.suppliersData) {
+      const suppliersArray = Object.entries(
+        commissionImportUser.suppliersData,
+      ).map(([supplierId, supplier]) => ({
+        supplier: supplierId,
+        encours: supplier.encours,
+        production: supplier.production,
+      }));
+      form.setFieldValue("commission_suppliers", suppliersArray);
+    }
+  }, [commissionImportUser]);
 
   const handleEmployeeChange = (userId: User["id"]) => {
     const user = users?.docs.find((u) => u.id === userId);
@@ -387,7 +405,7 @@ export default function CreateCommissionDialog({
 
                 {Object.values(commissionImportUser.suppliersData).map(
                   (supplier) => (
-                    <div key={supplier.supplierId} className="space-y-4">
+                    <div key={supplier.supplierName} className="space-y-4">
                       <Card className="gap-1 py-4">
                         <CardHeader className="">
                           <CardTitle className="text-lg flex items-center gap-2">

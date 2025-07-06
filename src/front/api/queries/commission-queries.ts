@@ -28,13 +28,18 @@ export async function getCommissionsQuery({
 
 export const createCommissionQuery = async (data: {
   app_user: string;
-  commission_suppliers: string;
+  commission_suppliers: {
+    supplier: Supplier["id"];
+    encours: number;
+    production: number;
+  }[];
   date: string;
-  structured_product?: boolean | undefined;
+  structured_product: boolean;
   title?: string | undefined;
   up_front?: number | undefined;
   broqueur?: string | undefined;
 }) => {
+  console.log(data);
   const response = await api.post("/api/commissions", data);
   return response.data;
 };
