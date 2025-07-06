@@ -97,7 +97,7 @@ export default function CreateCommissionDialog({
       createCommission.mutate({
         app_user: app_user.id,
         commission_suppliers,
-        date: date.toString(),
+        date: date.toISOString(),
         structured_product: false,
         broqueur: undefined,
         up_front: undefined,
@@ -449,7 +449,14 @@ export default function CreateCommissionDialog({
               <X className="w-4 h-4 mr-2" />
               Annuler
             </Button>
-            <Button type="submit" disabled={form.state.isSubmitting}>
+            <Button
+              type="submit"
+              disabled={
+                form.state.isSubmitting ||
+                createCommission.isPending ||
+                loadingUsers
+              }
+            >
               {form.state.isSubmitting || createCommission.isPending ? (
                 <>
                   <Calculator className="w-4 h-4 mr-2 animate-spin" />
@@ -476,26 +483,5 @@ const validateUser = ({ value }: { value: User | null }) => {
 
 const validatePeriod = ({ value }: { value: Date | undefined }) => {
   if (!value) return "Le mois est requis";
-  return undefined;
-};
-
-const validateSalesAmount = ({ value }: { value: string }) => {
-  if (!value || Number.parseFloat(value) <= 0) {
-    return "Un montant de vente valide est requis";
-  }
-  return undefined;
-};
-
-const validateCommissionRate = ({ value }: { value: string }) => {
-  if (!value || Number.parseFloat(value) <= 0) {
-    return "Un taux de commission valide est requis";
-  }
-  return undefined;
-};
-
-const validateCommissionAmount = ({ value }: { value: string }) => {
-  if (!value || Number.parseFloat(value) <= 0) {
-    return "Un montant de commission valide est requis";
-  }
   return undefined;
 };

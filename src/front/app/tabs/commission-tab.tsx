@@ -234,7 +234,7 @@ export default function CommissionsTab() {
                     <TableHead className="px-5">Nom et prénom</TableHead>
                     <TableHead className="px-5">Role</TableHead>
                     <TableHead className="px-5">Production</TableHead>
-                    <TableHead className="px-5">Encours</TableHead>
+                    <TableHead className="px-5">Date</TableHead>
                     <TableHead className="ml-auto text-right px-5">
                       Actions
                     </TableHead>
@@ -259,7 +259,11 @@ export default function CommissionsTab() {
                         <Badge variant="secondary">0</Badge>
                       </TableCell>
                       <TableCell className="px-5">
-                        <Badge variant="secondary">0</Badge>
+                        {new Date(commission.date).toLocaleDateString("fr-FR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "2-digit",
+                        })}
                       </TableCell>
 
                       <TableCell className="text-right px-5">
