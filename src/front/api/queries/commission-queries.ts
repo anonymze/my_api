@@ -46,6 +46,11 @@ export const createCommissionQuery = async (data: {
   return response.data;
 };
 
+export const deleteCommissionQuery = async (commissionId: Commission["id"]) => {
+  const response = await api.delete(`/api/commissions/${commissionId}`);
+  return response.data;
+};
+
 export async function getCommissionImportUserQuery({
   queryKey,
 }: {

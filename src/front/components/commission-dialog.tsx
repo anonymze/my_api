@@ -126,6 +126,7 @@ export default function CreateCommissionDialog({
     error: errorCommissions,
     data: commissionImportUser,
     isLoading: loadingCommissions,
+    isFetching,
   } = useQuery({
     queryKey: ["commission-import-user", selectedEmployeeId],
     queryFn: getCommissionImportUserQuery,
@@ -141,7 +142,6 @@ export default function CreateCommissionDialog({
       const suppliersArray = Object.entries(
         commissionImportUser.suppliersData,
       ).map(([supplierId, supplier]) => ({
-        id: "",
         supplier: supplierId,
         encours: supplier.encours,
         production: supplier.production,
@@ -454,6 +454,7 @@ export default function CreateCommissionDialog({
               disabled={
                 form.state.isSubmitting ||
                 createCommission.isPending ||
+                isFetching ||
                 loadingUsers
               }
             >

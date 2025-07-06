@@ -1,4 +1,7 @@
-import { getCommissionsQuery } from "@/front/api/queries/commission-queries";
+import {
+  deleteCommissionQuery,
+  getCommissionsQuery,
+} from "@/front/api/queries/commission-queries";
 import CreateCommissionDialog from "@/front/components/commission-dialog";
 import { Alert, AlertDescription } from "@/front/components/ui/alert";
 import { Badge } from "@/front/components/ui/badge";
@@ -34,7 +37,12 @@ import {
   TableRow,
 } from "@/front/components/ui/table";
 import { userRoleLabels } from "@/front/types/user";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   BookAlertIcon,
   Calculator,
@@ -82,6 +90,8 @@ const SearchInput = ({
 );
 
 export default function CommissionsTab() {
+  const queryClient = useQueryClient();
+
   // Get initial search term from URL
   const getInitialSearchTerm = () => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -92,6 +102,17 @@ export default function CommissionsTab() {
   const [periodFilter, setPeriodFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+  // Delete commission mutation
+  const deleteCommissionMutation = useMutation({
+    mutationFn: deleteCommissionQuery,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["commissions"] });
+    },
+    onError: () => {
+      alert("Erreur lors de la suppression de la commission");
+    },
+  });
 
   // Update URL when search term changes
   const handleSearchChange = (value: string) => {
@@ -180,7 +201,10 @@ export default function CommissionsTab() {
                 employés.
               </CardDescription>
             </div>
-            <Button onClick={() => setShowCreateDialog(true)}>
+            <Button
+              disabled={deleteCommissionMutation.isPending}
+              onClick={() => setShowCreateDialog(true)}
+            >
               Créer une commission
             </Button>
           </div>
@@ -268,7 +292,10 @@ export default function CommissionsTab() {
 
                       <TableCell className="text-right px-5">
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
+                          <DropdownMenuTrigger
+                            disabled={deleteCommissionMutation.isPending}
+                            asChild
+                          >
                             <Button variant="ghost" className="h-8 w-8 p-0">
                               <span className="sr-only">Ouvrir le menu</span>
                               <MoreHorizontal className="h-4 w-4" />
@@ -292,8 +319,9 @@ export default function CommissionsTab() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() =>
-                                console.log("Delete", commission.id)
+                                deleteCommissionMutation.mutate(commission.id)
                               }
+                              disabled={deleteCommissionMutation.isPending}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               <span>Supprimer</span>
