@@ -40,7 +40,10 @@ export const createCommissionQuery = async (data: {
   broqueur?: string | undefined;
 }) => {
   console.log(data);
-  const response = await api.post("/api/commissions", data);
+  const response = await api.post(
+    `/api/commissions/commission-suppliers/${data.app_user}`,
+    data,
+  );
   return response.data;
 };
 
