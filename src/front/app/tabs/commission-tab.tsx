@@ -131,14 +131,6 @@ export default function CommissionsTab() {
       } else if (contentType?.includes("application/vnd.ms-excel")) {
         extension = ".xls";
         mimeType = "application/vnd.ms-excel";
-      } else if (
-        contentType?.includes(
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
-      ) {
-        extension = ".xlsx";
-        mimeType =
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
       } else {
         // Default to Excel if unknown
         extension = ".xlsx";
@@ -383,7 +375,6 @@ export default function CommissionsTab() {
                               onClick={() =>
                                 exportCommissionMutation.mutate(commission.id)
                               }
-                              disabled={exportCommissionMutation.isPending}
                             >
                               <Download className="mr-2 h-4 w-4" />
                               <span>Exporter</span>
