@@ -120,9 +120,9 @@ export default function CreateCommissionDialog({
     queryKey: ["commission-import-user", selectedEmployeeId],
     queryFn: getCommissionImportUserQuery,
     enabled: !!selectedEmployeeId,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
-
-  console.log(commissionImportUser);
 
   // Auto-calculate commission when sales amount or rate changes
   const handleCalculation = (

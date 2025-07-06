@@ -55,7 +55,6 @@ export default function SupplierMappingTab() {
     mutationFn: deleteSupplierCommissionColumnQuery,
     onSuccess: (_, deletedId) => {
       queryClient.invalidateQueries({ queryKey: ["suppliers-column"] });
-      queryClient.invalidateQueries({ queryKey: ["commission-import-user"] });
 
       // Update local state to remove the deleted supplier
       const deletedMapping = existingSupplierColumns.find(
@@ -78,7 +77,6 @@ export default function SupplierMappingTab() {
     mutationFn: createSupplierCommissionColumnQuery,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suppliers-column"] });
-      queryClient.invalidateQueries({ queryKey: ["commission-import-user"] });
       // Local state will be updated by the useEffect when the query refetches
     },
   });
@@ -87,7 +85,6 @@ export default function SupplierMappingTab() {
     mutationFn: updateSupplierCommissionColumnQuery,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suppliers-column"] });
-      queryClient.invalidateQueries({ queryKey: ["commission-import-user"] });
       // Local state will be updated by the useEffect when the query refetches
     },
   });
