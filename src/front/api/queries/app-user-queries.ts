@@ -1,5 +1,5 @@
 import type { PaginatedResponse } from "@/front/types/response";
-import type { User } from "@/server/types/user";
+import type { User } from "@/front/types/user";
 import type { QueryKey } from "@tanstack/react-query";
 import { api } from "../_config";
 

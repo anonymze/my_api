@@ -73,15 +73,9 @@ export default function CreateCommissionDialog({
 
   const form = useForm({
     defaultValues: {
-      employee: null as Employee | null,
-      period: undefined as Date | undefined,
-      production: "",
-      encours: "",
-      salesAmount: "",
-      commissionRate: "",
-      commissionAmount: "",
-      notes: "",
-      calculationType: "automatic" as "manual" | "automatic",
+      app_user: null as User | null | undefined,
+      commission_suppliers: null as Supplier["id"] | null,
+      date: null,
     },
     onSubmit: async ({ value }) => {},
   });
@@ -115,47 +109,12 @@ export default function CreateCommissionDialog({
     gcTime: 0,
   });
 
-  // Auto-calculate commission when sales amount or rate changes
-  const handleCalculation = (
-    salesAmount: string,
-    commissionRate: string,
-    calculationType: string,
-  ) => {
-    if (calculationType === "automatic" && salesAmount && commissionRate) {
-      const sales = Number.parseFloat(salesAmount) || 0;
-      const rate = Number.parseFloat(commissionRate) || 0;
-      const commission = (sales * rate) / 100;
-      form.setFieldValue("commissionAmount", commission.toFixed(2));
-    }
-  };
-
   const handleEmployeeChange = (userId: User["id"]) => {
     const user = users?.docs.find((u) => u.id === userId);
     if (user) {
-      const employee: Employee = {
-        id: parseInt(user.id),
-        name:
-          `${user.firstname || ""} ${user.lastname || ""}`.trim() || user.email,
-        code: user.id,
-        email: user.email,
-        defaultRate: 5, // Default rate
-      };
-      form.setFieldValue("employee", employee);
-      form.setFieldValue("commissionRate", employee.defaultRate.toString());
-
+      form.setFieldValue("app_user", user);
       // Validate the employee field to clear errors
-      form.validateField("employee", "change");
-
-      // Set selected employee ID to trigger commission fetch
-      setSelectedEmployeeId(user.id);
-
-      // Recalculate if in automatic mode
-      const currentValues = form.state.values;
-      handleCalculation(
-        currentValues.salesAmount,
-        employee.defaultRate.toString(),
-        currentValues.calculationType,
-      );
+      form.validateField("app_user", "change");
     }
     setPopoverOpen(false);
   };
@@ -193,9 +152,9 @@ export default function CreateCommissionDialog({
                 <CardContent className="space-y-4">
                   {/* Employee Field */}
                   <form.Field
-                    name="employee"
+                    name="app_user"
                     validators={{
-                      onChange: validateEmployee,
+                      onChange: validateUser,
                     }}
                   >
                     {(field) => (
@@ -217,7 +176,7 @@ export default function CreateCommissionDialog({
                               className="w-full justify-between"
                             >
                               {field.state.value
-                                ? field.state.value.name
+                                ? field.state.value.email
                                 : "Choisir un utilisateur..."}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
@@ -279,7 +238,7 @@ export default function CreateCommissionDialog({
 
                   {/* Period Field */}
                   <form.Field
-                    name="period"
+                    name="date"
                     validators={{
                       onChange: validatePeriod,
                     }}
@@ -311,7 +270,12 @@ export default function CreateCommissionDialog({
                             <Calendar
                               mode="single"
                               selected={field.state.value}
-                              onSelect={(date) => field.handleChange(date)}
+                              onSelect={(date) => {
+                                // console.log("date", date);
+                                // if (date) {
+                                //   field.handleChange(date);
+                                // }
+                              }}
                             />
                           </PopoverContent>
                         </Popover>
@@ -454,7 +418,7 @@ export default function CreateCommissionDialog({
   );
 }
 
-const validateEmployee = ({ value }: { value: Employee | null }) => {
+const validateUser = ({ value }: { value: User | null }) => {
   if (!value) return "L'employé est requis";
   return undefined;
 };
