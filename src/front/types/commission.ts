@@ -61,6 +61,7 @@ export interface CommissionImportUser {
   totalGlobalStructured: string;
   suppliersData: {
     [key: string]: {
+      supplierName: string;
       encours: number;
       production: number;
       structured: number;

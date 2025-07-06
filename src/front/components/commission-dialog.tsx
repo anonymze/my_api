@@ -13,20 +13,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/front/components/ui/dialog";
-import { Input } from "@/front/components/ui/input";
 import { Label } from "@/front/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/front/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/front/components/ui/select";
 import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
@@ -34,9 +26,7 @@ import {
   Calculator,
   CalendarIcon,
   ChevronsUpDown,
-  DollarSign,
   Loader2,
-  Percent,
   Save,
   X,
 } from "lucide-react";
@@ -191,7 +181,7 @@ export default function CreateCommissionDialog({
           }}
           className="space-y-6"
         >
-          <div className="grid grid-cols-1 gap-6">
+          <div className="grid grid-cols-1 gap-4">
             {/* Left Column - Basic Information */}
             <div className="space-y-4">
               <Card className="gap-2 py-4">
@@ -375,7 +365,7 @@ export default function CreateCommissionDialog({
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium text-production">
+                          <Label className="text-sm font-medium">
                             Production
                           </Label>
                           <div className="flex items-center gap-2 p-2 bg-orange-50 rounded-lg border border-production">
@@ -385,9 +375,7 @@ export default function CreateCommissionDialog({
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium text-encours">
-                            Encours
-                          </Label>
+                          <Label className="text-sm font-medium">Encours</Label>
                           <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-encours">
                             <span className="text-lg font-semibold text-encours">
                               {commissionImportUser.totalGlobalEncours}€
@@ -399,195 +387,37 @@ export default function CreateCommissionDialog({
                   </Card>
                 </div>
 
-                <div className="space-y-4">
-                  <Card className="gap-2 py-4">
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        Détails
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Sales Amount Field */}
-                      <form.Field
-                        name="salesAmount"
-                        validators={{
-                          onChange: validateSalesAmount,
-                        }}
-                      >
-                        {(field) => (
+                {Object.values(commissionImportUser.suppliersData).map(
+                  (supplier) => (
+                    <div className="space-y-4">
+                      <Card className="gap-1 py-4">
+                        <CardHeader className="">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            {supplier.supplierName}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
                           <div className="space-y-2">
-                            <Label htmlFor="salesAmount">
-                              Montant des ventes *
+                            <Label className="text-sm font-medium">
+                              Production :
+                              <span className="text-md font-semibold text-production">
+                                {commissionImportUser.totalGlobalProduction}€
+                              </span>
                             </Label>
-                            <div className="relative">
-                              <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                              <Input
-                                id="salesAmount"
-                                type="number"
-                                step="0.01"
-                                placeholder="0.00"
-                                value={field.state.value}
-                                onChange={(e) => {
-                                  field.handleChange(e.target.value);
-                                  const currentValues = form.state.values;
-                                  handleCalculation(
-                                    e.target.value,
-                                    currentValues.commissionRate,
-                                    currentValues.calculationType,
-                                  );
-                                }}
-                                className={cn(
-                                  "pl-10",
-                                  field.state.meta.errors.length > 0 &&
-                                    "border-red-500",
-                                )}
-                              />
-                            </div>
-                            {field.state.meta.errors.length > 0 && (
-                              <p className="text-sm text-red-500">
-                                {field.state.meta.errors[0]}
-                              </p>
-                            )}
                           </div>
-                        )}
-                      </form.Field>
-
-                      {/* Commission Rate Field */}
-                      <form.Field
-                        name="commissionRate"
-                        validators={{
-                          onChange: validateCommissionRate,
-                        }}
-                      >
-                        {(field) => (
                           <div className="space-y-2">
-                            <Label htmlFor="commissionRate">
-                              Taux de commission (%) *
+                            <Label className="text-sm font-medium">
+                              Encours :
+                              <span className="text-md font-semibold text-encours">
+                                {commissionImportUser.totalGlobalEncours}€
+                              </span>
                             </Label>
-                            <div className="relative">
-                              <Percent className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                              <Input
-                                id="commissionRate"
-                                type="number"
-                                step="0.01"
-                                placeholder="0.00"
-                                value={field.state.value}
-                                onChange={(e) => {
-                                  field.handleChange(e.target.value);
-                                  const currentValues = form.state.values;
-                                  handleCalculation(
-                                    currentValues.salesAmount,
-                                    e.target.value,
-                                    currentValues.calculationType,
-                                  );
-                                }}
-                                className={cn(
-                                  "pl-10",
-                                  field.state.meta.errors.length > 0 &&
-                                    "border-red-500",
-                                )}
-                              />
-                            </div>
-                            {field.state.meta.errors.length > 0 && (
-                              <p className="text-sm text-red-500">
-                                {field.state.meta.errors[0]}
-                              </p>
-                            )}
                           </div>
-                        )}
-                      </form.Field>
-
-                      {/* Calculation Type Field */}
-                      <form.Field name="calculationType">
-                        {(field) => (
-                          <div className="space-y-2">
-                            <Label htmlFor="calculationType">
-                              Type de calcul
-                            </Label>
-                            <Select
-                              value={field.state.value}
-                              onValueChange={(
-                                value: "manual" | "automatic",
-                              ) => {
-                                field.handleChange(value);
-                                if (value === "automatic") {
-                                  const currentValues = form.state.values;
-                                  handleCalculation(
-                                    currentValues.salesAmount,
-                                    currentValues.commissionRate,
-                                    value,
-                                  );
-                                }
-                              }}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="automatic">
-                                  Automatique (Taux × Ventes)
-                                </SelectItem>
-                                <SelectItem value="manual">
-                                  Saisie manuelle
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-                      </form.Field>
-
-                      {/* Commission Amount Field */}
-                      <form.Field
-                        name="commissionAmount"
-                        validators={{
-                          onChange: validateCommissionAmount,
-                        }}
-                      >
-                        {(field) => (
-                          <div className="space-y-2">
-                            <Label htmlFor="commissionAmount">
-                              Montant de la commission *
-                            </Label>
-                            <div className="relative">
-                              <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                              <Input
-                                id="commissionAmount"
-                                type="number"
-                                step="0.01"
-                                placeholder="0.00"
-                                value={field.state.value}
-                                onChange={(e) =>
-                                  field.handleChange(e.target.value)
-                                }
-                                className={cn(
-                                  "pl-10",
-                                  field.state.meta.errors.length > 0 &&
-                                    "border-red-500",
-                                )}
-                                disabled={
-                                  form.state.values.calculationType ===
-                                  "automatic"
-                                }
-                              />
-                            </div>
-                            {field.state.meta.errors.length > 0 && (
-                              <p className="text-sm text-red-500">
-                                {field.state.meta.errors[0]}
-                              </p>
-                            )}
-                            {form.state.values.calculationType ===
-                              "automatic" && (
-                              <p className="text-xs text-muted-foreground">
-                                Calculé automatiquement basé sur le montant des
-                                ventes et le taux de commission
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </form.Field>
-                    </CardContent>
-                  </Card>
-                </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ),
+                )}
               </>
             ) : null}
           </div>
