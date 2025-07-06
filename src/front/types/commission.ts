@@ -5,17 +5,22 @@ import type { AppUser, User } from "./user";
 export interface Commission {
   id: string;
   app_user: AppUser["user"];
+  date: string;
+  commission_suppliers: CommissionSupplier[];
   pdf?: Media | null;
-  suppliers: Supplier[];
   structured_product?: boolean | null;
-  informations?: {
-    date: string;
-    encours?: number | null;
-    production?: number | null;
-    title?: string | null;
-    up_front?: number | null;
-    broqueur?: string | null;
-  };
+  title?: string | null;
+  up_front?: number | null;
+  broqueur?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+
+export interface CommissionSupplier {
+  id: string;
+  supplier: Supplier;
+  encours: number;
+  production: number;
   updatedAt: string;
   createdAt: string;
 }

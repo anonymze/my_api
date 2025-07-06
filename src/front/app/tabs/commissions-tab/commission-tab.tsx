@@ -32,13 +32,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/front/components/ui/table";
+import { userRoleLabels } from "@/front/types/user";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   BookAlertIcon,
   Calculator,
   Download,
   Edit,
-  Eye,
   Filter,
   Mail,
   MoreHorizontal,
@@ -260,7 +260,7 @@ export default function CommissionsTab() {
                     </TableCell>
                     <TableCell className="px-5">
                       <Badge variant="outline">
-                        {commission.app_user.role}
+                        {userRoleLabels[commission.app_user.role]}
                       </Badge>
                     </TableCell>
                     <TableCell className="px-5">
@@ -287,13 +287,13 @@ export default function CommissionsTab() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem
+                          {/* <DropdownMenuItem
                             onClick={() => console.log("View", commission.id)}
                           >
                             <Eye className="mr-2 h-4 w-4" />
                             <span>Voir</span>
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator />
+                          <DropdownMenuSeparator /> */}
                           <DropdownMenuItem
                             onClick={() => console.log("Update", commission.id)}
                           >
@@ -319,7 +319,7 @@ export default function CommissionsTab() {
                             }
                           >
                             <Mail className="mr-2 h-4 w-4" />
-                            <span>Envoyer email</span>
+                            <span>Envoyer</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
