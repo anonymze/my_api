@@ -29,6 +29,7 @@ import {
 } from "@/front/components/ui/select";
 import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
 import {
   Calculator,
   CalendarIcon,
@@ -41,7 +42,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { getAppUsersQuery } from "../api/queries/app-user-queries";
-import { getCommissionsQuery } from "../api/queries/commission-queries";
+import { getCommissionImportUserQuery } from "../api/queries/commission-queries";
 import { cn } from "../lib/utils";
 import type { User } from "../types/user";
 import {
@@ -66,27 +67,10 @@ interface Supplier {
   defaultRate: number;
 }
 
-interface CommissionFormData {
-  employee: Employee | null;
-  supplier: Supplier | null;
-  period: Date | undefined;
-  salesAmount: string;
-  commissionRate: string;
-  commissionAmount: string;
-  notes: string;
-  calculationType: "manual" | "automatic";
-}
-
 interface CreateCommissionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const suppliers: Supplier[] = [
-  { id: 1, name: "Supplier A", defaultRate: 5 },
-  { id: 2, name: "Supplier B", defaultRate: 6 },
-  { id: 3, name: "Supplier C", defaultRate: 4 },
-];
 
 export default function CreateCommissionDialog({
   open,
@@ -128,22 +112,15 @@ export default function CreateCommissionDialog({
   });
 
   const {
+    isError,
     error: errorCommissions,
-    data: commissions,
+    data: commissionImportUser,
     isLoading: loadingCommissions,
   } = useQuery({
-    queryKey: [
-      "commissions",
-      {
-        userId: selectedEmployeeId,
-      },
-    ],
-    queryFn: getCommissionsQuery,
+    queryKey: ["commission-import-user", selectedEmployeeId],
+    queryFn: getCommissionImportUserQuery,
     enabled: !!selectedEmployeeId,
   });
-
-  console.log(users);
-  console.log(open);
 
   // Auto-calculate commission when sales amount or rate changes
   const handleCalculation = (
@@ -358,15 +335,27 @@ export default function CreateCommissionDialog({
             </div>
 
             {/* Right Column - Financial Information */}
-            {loadingCommissions ? (
+            {loadingCommissions || isError ? (
               <div className="space-y-4">
                 <Card className="gap-1 py-0">
                   <CardContent className="flex items-center justify-center py-8">
                     <div className="flex flex-col items-center gap-3">
-                      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                      <p className="text-sm text-gray-600">
-                        Chargement des calculs de commission...
-                      </p>
+                      {isError ? (
+                        <p className="text-sm text-red-500">
+                          {/* @ts-ignore */}
+                          {isAxiosError(errorCommissions)
+                            ? errorCommissions.response?.data?.message ||
+                              "Une erreur inconnue est survenue"
+                            : "Une erreur inconnue est survenue"}
+                        </p>
+                      ) : (
+                        <>
+                          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                          <p className="text-sm text-gray-600">
+                            Chargement des calculs de commission...
+                          </p>
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

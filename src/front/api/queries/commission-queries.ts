@@ -25,6 +25,17 @@ export async function getCommissionsQuery({
   return response.data;
 }
 
+export async function getCommissionImportUserQuery({
+  queryKey,
+}: {
+  queryKey: QueryKey;
+}) {
+  const [, userId] = queryKey;
+
+  const response = await api.get<any>(`/api/commission-imports/${userId}`);
+  return response.data;
+}
+
 export async function getAppUserCommissionsCodeQuery({
   queryKey,
 }: {
@@ -40,35 +51,31 @@ export async function getAppUserCommissionsCodeQuery({
   return response.data;
 }
 
-export const createAppUserCommissionCodeQuery = async (
-  data: {
-    app_user: string;
-    code: { code: string; id?: string | null }[];
-  }
-) => {
+export const createAppUserCommissionCodeQuery = async (data: {
+  app_user: string;
+  code: { code: string; id?: string | null }[];
+}) => {
   const response = await api.post("/api/app-users-commissions-code", data);
   return response.data;
 };
 
-export const updateAppUserCommissionCodeQuery = async (
-  data: {
-    app_user: string;
-    code: { code: string; id?: string | null }[];
-    appUserCodeId: AppUsersCommissionsCode["id"];
-  }
-) => {
+export const updateAppUserCommissionCodeQuery = async (data: {
+  app_user: string;
+  code: { code: string; id?: string | null }[];
+  appUserCodeId: AppUsersCommissionsCode["id"];
+}) => {
   const response = await api.patch(
     `/api/app-users-commissions-code/${data.appUserCodeId}`,
-    data
+    data,
   );
   return response.data;
 };
 
 export async function deleteAppUserCommissionCodeQuery(
-  appUserCodeId: AppUsersCommissionsCode["id"]
+  appUserCodeId: AppUsersCommissionsCode["id"],
 ) {
   const response = await api.delete(
-    `/api/app-users-commissions-code/${appUserCodeId}`
+    `/api/app-users-commissions-code/${appUserCodeId}`,
   );
   return response.data;
 }
