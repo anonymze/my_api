@@ -31,6 +31,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { queryClient } from "../api/_queries";
 import { getAppUsersQuery } from "../api/queries/app-user-queries";
 import {
@@ -67,10 +68,11 @@ export default function CreateCommissionDialog({
     mutationFn: createCommissionQuery,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["commissions"] });
+      toast.success("Commission créée avec succès");
       onOpenChange(false);
     },
     onError: (_) => {
-      alert(
+      toast.error(
         "Une erreur est survenue lors de la création de la commission, recommencez ou contactez le développeur.",
       );
       form.setFieldValue("app_user", null);

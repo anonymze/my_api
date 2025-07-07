@@ -30,6 +30,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronsUpDown, CodeIcon, Loader2, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { TabSkeleton } from "../home";
 
 export default function UsersCodeTab() {
@@ -43,6 +44,7 @@ export default function UsersCodeTab() {
     mutationFn: deleteAppUserCommissionCodeQuery,
     onSuccess: (_, deletedId) => {
       queryClient.invalidateQueries({ queryKey: ["commissions-code"] });
+      toast.success("Codes utilisateur supprimés avec succès");
 
       // Update local state to remove the deleted user
       const deletedMapping = existingCodeUsers.find(
@@ -65,10 +67,11 @@ export default function UsersCodeTab() {
     mutationFn: createAppUserCommissionCodeQuery,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["commissions-code"] });
+      toast.success("Codes utilisateur créés avec succès");
       // Local state will be updated by the useEffect when the query refetches
     },
     onError: (error) => {
-      alert(
+      toast.error(
         "Une erreur est survenue. Vérifiez que vous n'avez pas entré deux fois le même code sur la page.",
       );
     },
@@ -78,10 +81,11 @@ export default function UsersCodeTab() {
     mutationFn: updateAppUserCommissionCodeQuery,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["commissions-code"] });
+      toast.success("Codes utilisateur mis à jour avec succès");
       // Local state will be updated by the useEffect when the query refetches
     },
     onError: (error) => {
-      alert(
+      toast.error(
         "Une erreur est survenue. Vérifiez que vous n'avez pas entré deux fois le même code sur la page.",
       );
     },

@@ -4,6 +4,7 @@ import React from "react";
 import { queryClient } from "./api/_queries";
 import CommissionPage from "./app/home";
 import LoginPage from "./app/login";
+import { Toaster } from "./components/ui/sonner";
 import { AuthContext, AuthProvider } from "./context/auth-context";
 
 function AppContent() {
@@ -29,6 +30,7 @@ export default function Page() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AppContent />
+        <Toaster />
       </AuthProvider>
     </QueryClientProvider>
   );

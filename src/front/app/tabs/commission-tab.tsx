@@ -44,6 +44,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   BookAlertIcon,
   Calculator,
@@ -109,9 +110,10 @@ export default function CommissionsTab() {
     mutationFn: deleteCommissionQuery,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["commissions"] });
+      toast.success("Commission supprimée avec succès");
     },
     onError: () => {
-      alert("Erreur lors de la suppression de la commission");
+      toast.error("Erreur lors de la suppression de la commission");
     },
   });
 
@@ -119,7 +121,11 @@ export default function CommissionsTab() {
   const exportCommissionMutation = useMutation({
     mutationFn: getCommissionExportQuery,
     onSuccess: (response, commissionRequest) => {
-      if (commissionRequest.email) return;
+      if (commissionRequest.email) {
+        toast.success("Commission envoyée par email avec succès");
+        return;
+      }
+      
       const { data, contentType } = response;
 
       // Determine file extension based on content type
@@ -148,9 +154,11 @@ export default function CommissionsTab() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      
+      toast.success("Commission exportée avec succès");
     },
     onError: () => {
-      alert("Erreur lors de l'exportation de la commission");
+      toast.error("Erreur lors de l'exportation de la commission");
     },
   });
 
