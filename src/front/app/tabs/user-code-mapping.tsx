@@ -61,6 +61,9 @@ export default function UsersCodeTab() {
         });
       }
     },
+    onError: () => {
+      toast.error("Erreur lors de la suppression des codes utilisateur");
+    },
   });
 
   const createUserCodeMutation = useMutation({

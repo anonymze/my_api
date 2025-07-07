@@ -31,6 +31,7 @@ import type { Supplier } from "@/front/types/supplier";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronsUpDown, Code, Loader2, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { TabSkeleton } from "../home";
 
 export default function SupplierMappingTab() {
@@ -55,6 +56,7 @@ export default function SupplierMappingTab() {
     mutationFn: deleteSupplierCommissionColumnQuery,
     onSuccess: (_, deletedId) => {
       queryClient.invalidateQueries({ queryKey: ["suppliers-column"] });
+      toast.success("Mapping fournisseur supprimé avec succès");
 
       // Update local state to remove the deleted supplier
       const deletedMapping = existingSupplierColumns.find(
@@ -71,13 +73,20 @@ export default function SupplierMappingTab() {
         });
       }
     },
+    onError: () => {
+      toast.error("Erreur lors de la suppression du mapping fournisseur");
+    },
   });
 
   const createSupplierColumnMutation = useMutation({
     mutationFn: createSupplierCommissionColumnQuery,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suppliers-column"] });
+      toast.success("Mapping fournisseur créé avec succès");
       // Local state will be updated by the useEffect when the query refetches
+    },
+    onError: () => {
+      toast.error("Erreur lors de la création du mapping fournisseur");
     },
   });
 
@@ -85,7 +94,11 @@ export default function SupplierMappingTab() {
     mutationFn: updateSupplierCommissionColumnQuery,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suppliers-column"] });
+      toast.success("Mapping fournisseur mis à jour avec succès");
       // Local state will be updated by the useEffect when the query refetches
+    },
+    onError: () => {
+      toast.error("Erreur lors de la mise à jour du mapping fournisseur");
     },
   });
 

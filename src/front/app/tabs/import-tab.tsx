@@ -38,6 +38,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { TabSkeleton } from "../home";
 
 const allowedTypes = [
@@ -94,6 +95,10 @@ export default function ImportTab() {
     mutationFn: createCommissionImportQuery,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["commissions-import"] });
+      toast.success("Fichier importé avec succès");
+    },
+    onError: () => {
+      toast.error("Erreur lors de l'importation du fichier");
     },
   });
 
@@ -101,6 +106,10 @@ export default function ImportTab() {
     mutationFn: deleteCommissionImportQuery,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["commissions-import"] });
+      toast.success("Import supprimé avec succès");
+    },
+    onError: () => {
+      toast.error("Erreur lors de la suppression de l'import");
     },
   });
 

@@ -44,7 +44,6 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { toast } from "sonner";
 import {
   BookAlertIcon,
   Calculator,
@@ -58,6 +57,7 @@ import {
   XIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { TabSkeleton } from "../home";
 
 // Shared search input component outside the main component
@@ -125,7 +125,7 @@ export default function CommissionsTab() {
         toast.success("Commission envoyée par email avec succès");
         return;
       }
-      
+
       const { data, contentType } = response;
 
       // Determine file extension based on content type
@@ -154,7 +154,7 @@ export default function CommissionsTab() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
+
       toast.success("Commission exportée avec succès");
     },
     onError: () => {
@@ -308,7 +308,7 @@ export default function CommissionsTab() {
                     <TableHead className="px-5">Email</TableHead>
                     <TableHead className="px-5">Nom et prénom</TableHead>
                     <TableHead className="px-5">Role</TableHead>
-                    <TableHead className="px-5">Production</TableHead>
+                    <TableHead className="px-5">Données</TableHead>
                     <TableHead className="px-5">Date</TableHead>
                     <TableHead className="ml-auto text-right px-5">
                       Actions
@@ -330,8 +330,21 @@ export default function CommissionsTab() {
                           {userRoleLabels[commission.app_user.role]}
                         </Badge>
                       </TableCell>
-                      <TableCell className="px-5">
-                        <Badge variant="secondary">0</Badge>
+                      <TableCell className="px-5 flex flex-col gap-2">
+                        <Badge className="bg-production">
+                          Production :{" "}
+                          {commission.commission_suppliers.reduce(
+                            (cum, item) => Math.max(cum, item.production || 0),
+                            0,
+                          )}
+                        </Badge>
+                        <Badge className="bg-encours">
+                          Encours :{" "}
+                          {commission.commission_suppliers.reduce(
+                            (cum, item) => Math.max(cum, item.encours || 0),
+                            0,
+                          )}
+                        </Badge>
                       </TableCell>
                       <TableCell className="px-5">
                         {new Date(commission.date).toLocaleDateString("fr-FR", {

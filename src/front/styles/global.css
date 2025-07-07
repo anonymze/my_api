@@ -1,6 +1,36 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Toast Styling */
+[data-sonner-toaster] {
+  --success-bg: #10b981 !important;
+  --success-border: #059669 !important;
+  --success-text: #ffffff !important;
+  --error-bg: #ef4444 !important;
+  --error-border: #dc2626 !important;
+  --error-text: #ffffff !important;
+}
+
+[data-sonner-toast][data-type="success"] {
+  background-color: var(--success-bg) !important;
+  border-color: var(--success-border) !important;
+  color: var(--success-text) !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  background-color: var(--error-bg) !important;
+  border-color: var(--error-border) !important;
+  color: var(--error-text) !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-icon] {
+  color: var(--success-text) !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-icon] {
+  color: var(--error-text) !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
