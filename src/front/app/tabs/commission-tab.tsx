@@ -118,7 +118,8 @@ export default function CommissionsTab() {
   // Export commission mutation
   const exportCommissionMutation = useMutation({
     mutationFn: getCommissionExportQuery,
-    onSuccess: (response, commissionId) => {
+    onSuccess: (response, commissionRequest) => {
+      if (commissionRequest.email) return;
       const { data, contentType } = response;
 
       // Determine file extension based on content type
@@ -142,7 +143,7 @@ export default function CommissionsTab() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `commission-${commissionId}${extension}`;
+      a.download = `commission-${commissionRequest.commissionId}${extension}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -373,7 +374,9 @@ export default function CommissionsTab() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={() =>
-                                exportCommissionMutation.mutate(commission.id)
+                                exportCommissionMutation.mutate({
+                                  commissionId: commission.id,
+                                })
                               }
                             >
                               <Download className="mr-2 h-4 w-4" />
@@ -381,7 +384,10 @@ export default function CommissionsTab() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() =>
-                                console.log("Send email", commission.id)
+                                exportCommissionMutation.mutate({
+                                  commissionId: commission.id,
+                                  email: commission.app_user.email,
+                                })
                               }
                             >
                               <Mail className="mr-2 h-4 w-4" />

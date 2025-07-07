@@ -51,16 +51,25 @@ export const deleteCommissionQuery = async (commissionId: Commission["id"]) => {
   return response.data;
 };
 
-export const getCommissionExportQuery = async (
-  commissionId: Commission["id"],
-) => {
-  const response = await api.get(`/api/commissions/export/${commissionId}`, {
-    responseType: 'blob', // Important for file downloads
-  });
+export const getCommissionExportQuery = async ({
+  commissionId,
+  email,
+}: {
+  commissionId: Commission["id"];
+  email?: string | undefined;
+}) => {
+  const response = await api.get(
+    email
+      ? `/api/commissions/export/${commissionId}?email=${email}`
+      : `/api/commissions/export/${commissionId}`,
+    {
+      responseType: "blob", // Important for file downloads
+    },
+  );
   return {
     data: response.data,
     headers: response.headers,
-    contentType: response.headers['content-type'],
+    contentType: response.headers["content-type"],
   };
 };
 
