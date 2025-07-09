@@ -128,6 +128,8 @@ export default function CommissionsTab() {
 
       const { data, contentType } = response;
 
+      console.log(response);
+
       // Determine file extension based on content type
       let extension = "";
       let mimeType = contentType || "application/octet-stream";

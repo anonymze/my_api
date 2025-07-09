@@ -73,7 +73,7 @@ export default function CreateCommissionDialog({
     },
     onError: (_) => {
       toast.error(
-        "Une erreur est survenue lors de la création de la commission, recommencez ou contactez le développeur.",
+        "Une erreur est survenue lors de la création de la commission, recommencez ou contactez le développeur",
       );
       form.setFieldValue("app_user", null);
       setSelectedEmployeeId(null);

@@ -75,7 +75,7 @@ export default function UsersCodeTab() {
     },
     onError: (error) => {
       toast.error(
-        "Une erreur est survenue. Vérifiez que vous n'avez pas entré deux fois le même code sur la page.",
+        "Une erreur est survenue. Vérifiez que vous n'avez pas entré deux fois le même code sur la page",
       );
     },
   });
@@ -89,7 +89,7 @@ export default function UsersCodeTab() {
     },
     onError: (error) => {
       toast.error(
-        "Une erreur est survenue. Vérifiez que vous n'avez pas entré deux fois le même code sur la page.",
+        "Une erreur est survenue. Vérifiez que vous n'avez pas entré deux fois le même code sur la page",
       );
     },
   });
