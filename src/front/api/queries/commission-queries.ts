@@ -28,11 +28,7 @@ export async function getCommissionsQuery({
 
 export const createCommissionQuery = async (data: {
   app_user: string;
-  commission_suppliers: {
-    supplier: Supplier["id"];
-    encours: number;
-    production: number;
-  }[];
+  commission_supplier_ids: string[];
   date: string;
   structured_product: boolean;
   title?: string | undefined;
@@ -148,7 +144,7 @@ export async function getSupplierCommissionsColumnQuery({
 export const createSupplierCommissionColumnQuery = async (
   data: Pick<
     SuppliersCommissionsColumn,
-    "code_column_letter" | "type_column_letter" | "amount_column_letter"
+    "code_column_letter" | "type_column_letter" | "amount_column_letter" | "header_row"
   > & { supplier: Supplier["id"] },
 ) => {
   const response = await api.post("/api/suppliers-commissions-column", data);
@@ -159,7 +155,7 @@ export const createSupplierCommissionColumnQuery = async (
 export const updateSupplierCommissionColumnQuery = async (
   data: Pick<
     SuppliersCommissionsColumn,
-    "code_column_letter" | "type_column_letter" | "amount_column_letter"
+    "code_column_letter" | "type_column_letter" | "amount_column_letter" | "header_row"
   > & {
     supplier: Supplier["id"];
     supplierColumnId: SuppliersCommissionsColumn["id"];

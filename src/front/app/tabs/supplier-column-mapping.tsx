@@ -45,6 +45,7 @@ export default function SupplierMappingTab() {
         code: string;
         type: string;
         montant: string;
+        header_row: number;
       }
     >
   >({});
@@ -161,6 +162,7 @@ export default function SupplierMappingTab() {
           code: string;
           type: string;
           montant: string;
+          header_row: number;
         };
       } = {};
       existingSupplierColumns.forEach((mapping) => {
@@ -169,6 +171,7 @@ export default function SupplierMappingTab() {
             code: mapping.code_column_letter || "",
             type: mapping.type_column_letter || "",
             montant: mapping.amount_column_letter || "",
+            header_row: mapping.header_row || 1,
           };
         }
       });
@@ -187,6 +190,7 @@ export default function SupplierMappingTab() {
           code: "",
           type: "",
           montant: "",
+          header_row: 1,
         },
       }));
     }
@@ -260,16 +264,25 @@ export default function SupplierMappingTab() {
 
   const updateSupplierColumn = (
     supplierId: Supplier["id"],
-    field: "code" | "type" | "montant",
-    value: string,
+    field: "code" | "type" | "montant" | "header_row",
+    value: string | number,
   ) => {
-    // Only allow letters A-Z (case insensitive)
-    const filteredValue = value.replace(/[^a-zA-Z]/g, "");
+    let filteredValue = value;
+
+    // Only allow letters A-Z for column fields (case insensitive)
+    if (field !== "header_row") {
+      filteredValue = String(value).replace(/[^a-zA-Z]/g, "");
+    }
 
     setSupplierColumns((prev) => ({
       ...prev,
       [supplierId]: {
-        ...(prev[supplierId] || { code: "", type: "", montant: "" }),
+        ...(prev[supplierId] || {
+          code: "",
+          type: "",
+          montant: "",
+          header_row: 1,
+        }),
         [field]: filteredValue,
       },
     }));
@@ -291,6 +304,7 @@ export default function SupplierMappingTab() {
         code_column_letter: columnData.code,
         type_column_letter: columnData.type,
         amount_column_letter: columnData.montant,
+        header_row: columnData.header_row,
       });
     } else {
       // Create new mapping
@@ -299,6 +313,7 @@ export default function SupplierMappingTab() {
         code_column_letter: columnData.code,
         type_column_letter: columnData.type,
         amount_column_letter: columnData.montant,
+        header_row: columnData.header_row,
       });
     }
   };
@@ -534,6 +549,36 @@ export default function SupplierMappingTab() {
                               deleteSupplierColumnMutation.isPending
                             }
                             maxLength={1}
+                          />
+                        </div>
+
+                        {/* Header Row */}
+                        <div className="flex-1 space-y-1">
+                          <Label
+                            htmlFor={`header-row-${supplierId}`}
+                            className="text-xs text-gray-700"
+                          >
+                            Ligne des titres des colonnes
+                          </Label>
+                          <Input
+                            id={`header-row-${supplierId}`}
+                            type="number"
+                            placeholder="1"
+                            value={supplierColumns[supplierId]?.header_row || 1}
+                            onChange={(e) =>
+                              updateSupplierColumn(
+                                supplierId,
+                                "header_row",
+                                Number(e.target.value),
+                              )
+                            }
+                            className="w-full"
+                            disabled={
+                              createSupplierColumnMutation.isPending ||
+                              updateSupplierColumnMutation.isPending ||
+                              deleteSupplierColumnMutation.isPending
+                            }
+                            min={1}
                           />
                         </div>
                       </div>

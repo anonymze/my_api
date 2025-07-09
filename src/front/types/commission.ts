@@ -42,6 +42,7 @@ export interface SuppliersCommissionsColumn {
   code_column_letter: string;
   type_column_letter: string;
   amount_column_letter: string;
+  header_row: number;
   updatedAt: string;
   createdAt: string;
 }
@@ -59,6 +60,7 @@ export interface CommissionImportUser {
   totalGlobalEncours: string;
   totalGlobalProduction: string;
   totalGlobalStructured: string;
+  commissionSupplierIds: string[];
   suppliersData: {
     [key: string]: {
       supplierName: string;

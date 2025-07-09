@@ -92,13 +92,17 @@ export default function CreateCommissionDialog({
       date: new Date(),
     },
     onSubmit: async ({ value }) => {
-      const { app_user, commission_suppliers, date } = value;
+      const { app_user, date } = value;
 
-      if (!app_user || !commission_suppliers.length) return;
+      if (!app_user || !commissionImportUser?.commissionSupplierIds?.length) {
+        return toast(
+          "Quelque chose d'inattendu s'est produit, rechargez la page ou contactez le développeur.",
+        );
+      }
 
       createCommission.mutate({
         app_user: app_user.id,
-        commission_suppliers,
+        commission_supplier_ids: commissionImportUser.commissionSupplierIds,
         date: date.toISOString(),
         structured_product: false,
         broqueur: undefined,
@@ -137,6 +141,8 @@ export default function CreateCommissionDialog({
     staleTime: 0,
     gcTime: 0,
   });
+
+  console.log(errorCommissions);
 
   // Auto-populate commission_suppliers when commission data is loaded
   useEffect(() => {
@@ -415,12 +421,12 @@ export default function CreateCommissionDialog({
                             {supplier.supplierName}
                           </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-2">
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">
                               Production :
                               <span className="text-md font-semibold text-production">
-                                {commissionImportUser.totalGlobalProduction}€
+                                {supplier.production}
                               </span>
                             </Label>
                           </div>
@@ -428,7 +434,7 @@ export default function CreateCommissionDialog({
                             <Label className="text-sm font-medium">
                               Encours :
                               <span className="text-md font-semibold text-encours">
-                                {commissionImportUser.totalGlobalEncours}€
+                                {supplier.encours}
                               </span>
                             </Label>
                           </div>

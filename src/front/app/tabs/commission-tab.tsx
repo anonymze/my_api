@@ -334,14 +334,14 @@ export default function CommissionsTab() {
                         <Badge className="bg-production">
                           Production :{" "}
                           {commission.commission_suppliers.reduce(
-                            (cum, item) => Math.max(cum, item.production || 0),
+                            (cum, item) => cum + (item.production || 0),
                             0,
                           )}
                         </Badge>
                         <Badge className="bg-encours">
                           Encours :{" "}
                           {commission.commission_suppliers.reduce(
-                            (cum, item) => Math.max(cum, item.encours || 0),
+                            (cum, item) => cum + (item.encours || 0),
                             0,
                           )}
                         </Badge>

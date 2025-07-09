@@ -1,7 +1,8 @@
 import indexHtml from "./front/index.html";
 
+
 const server = Bun.serve({
-  port: 3000,
+  port: 3003,
   routes: {
     "/*": indexHtml,
     // "/api/login": loginRoute,
