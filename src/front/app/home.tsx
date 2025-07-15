@@ -107,12 +107,15 @@ export default function CommissionPage() {
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger
               value="commissions"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-blue-700"
             >
               <Calculator className="w-4 h-4" />
               Commissions
             </TabsTrigger>
-            <TabsTrigger value="import" className="flex items-center gap-2">
+            <TabsTrigger
+              value="import"
+              className="flex items-center gap-2 text-amber-700"
+            >
               <Upload className="w-4 h-4" />
               Importer les fichiers
             </TabsTrigger>

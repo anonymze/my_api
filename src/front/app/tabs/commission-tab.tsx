@@ -129,6 +129,7 @@ export default function CommissionsTab() {
       const { data, contentType } = response;
 
       console.log(response);
+      console.log(commissionRequest);
 
       // Determine file extension based on content type
       let extension = "";
